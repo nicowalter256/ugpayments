@@ -1,4 +1,3 @@
-library ugpayments;
 
 // Core payment functionality
 export 'src/core/payment_client.dart';
