@@ -53,8 +53,8 @@ class PaymentConstants {
   static const String defaultCurrency = 'UGX';
 
   /// API endpoints
-  static const String sandboxBaseUrl = 'https://sandbox-api.ugpayments.com';
-  static const String productionBaseUrl = 'https://api.ugpayments.com';
+  static const String sandboxBaseUrl = 'https://cybqa.pesapal.com/pesapalv3';
+  static const String productionBaseUrl = 'https://pay.pesapal.com/v3';
 
   /// Error codes
   static const String errorInvalidData = 'INVALID_DATA';

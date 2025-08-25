@@ -1,0 +1,33 @@
+name: ugpayments_example
+description: Example Flutter app demonstrating ugpayments package usage with PesaPal integration.
+
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.0
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Local package dependency
+  ugpayments:
+    path: ../
+
+  # Additional dependencies for the example
+  url_launcher: ^6.2.5
+  webview_flutter: ^4.7.0
+  shared_preferences: ^2.2.3
+
+  cupertino_icons: ^1.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

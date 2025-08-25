@@ -1,9 +1,10 @@
 # ugpayments
 
-A comprehensive Flutter package for processing payments in Uganda, supporting multiple payment methods including mobile money, bank transfers, and card payments.
+A comprehensive Flutter package for processing payments in Uganda, supporting multiple payment methods including PesaPal integration, mobile money, bank transfers, and card payments.
 
 ## Features
 
+- **PesaPal Integration**: Full integration with PesaPal payment gateway
 - **Multiple Payment Methods**: Support for mobile money (MTN, Airtel, M-Pesa), bank transfers, and card payments
 - **Comprehensive Validation**: Built-in validation for payment data, phone numbers, card numbers, and more
 - **Security**: Encryption utilities for sensitive payment data
@@ -23,22 +24,76 @@ dependencies:
 
 ## Usage
 
-### Basic Setup
+### Basic Setup with PesaPal
 
 ```dart
 import 'package:ugpayments/ugpayments.dart';
 
-// Create a payment configuration
-final config = PaymentConfig.sandbox(
-  apiKey: 'your_api_key',
+// Create a PesaPal payment configuration
+final config = PaymentConfig.pesaPalSandbox(
+  apiKey: 'your_pesapal_bearer_token',
   apiSecret: 'your_api_secret',
+  callbackUrl: 'https://your-app.com/payment-callback',
+  notificationId: 'your_notification_id',
 );
 
 // Create a payment client
 final client = PaymentClient(config);
 ```
 
-### Mobile Money Payment
+### PesaPal Payment Processing
+
+```dart
+// Create a payment request
+final request = PaymentRequest(
+  amount: 1000.0,
+  currency: 'UGX',
+  paymentMethod: 'PESAPAL',
+  phoneNumber: '+256701234567',
+  email: 'customer@example.com',
+  description: 'Payment for services',
+  merchantReference: 'ORDER-123',
+  metadata: {
+    'first_name': 'John',
+    'last_name': 'Doe',
+    'city': 'Kampala',
+    'state': 'Central',
+  },
+);
+
+// Process the payment
+try {
+  final response = await client.processPayment(request);
+
+  if (response.isSuccessful) {
+    print('Payment successful: ${response.transactionId}');
+  } else if (response.isPending) {
+    print('Payment pending. Redirect to: ${response.data?['redirect_url']}');
+    // Open the redirect URL in a WebView or browser
+  } else {
+    print('Payment failed: ${response.message}');
+  }
+} catch (e) {
+  print('Payment error: $e');
+}
+```
+
+### Using PesaPal Provider Directly
+
+```dart
+// Create PesaPal provider
+final pesapalProvider = PesaPalProvider(config);
+
+// Submit order
+final response = await pesapalProvider.submitOrder(request);
+
+// Check transaction status
+final statusResponse = await pesapalProvider.getTransactionStatus(
+  response.transactionId,
+);
+```
+
+### Mobile Money Payment (Legacy)
 
 ```dart
 // Create a payment request
@@ -131,6 +186,13 @@ final maskedPhone = Encryption.maskPhoneNumber('+256701234567');
 
 ## Supported Payment Methods
 
+### PesaPal Integration
+
+- Complete PesaPal API integration
+- Order submission and status tracking
+- Redirect URL handling
+- Callback notifications
+
 ### Mobile Money
 
 - MTN Mobile Money
@@ -184,6 +246,59 @@ try {
 }
 ```
 
+## PesaPal Integration Details
+
+### Configuration
+
+```dart
+// Sandbox environment
+final config = PaymentConfig.pesaPalSandbox(
+  apiKey: 'your_bearer_token',
+  apiSecret: 'your_secret',
+  callbackUrl: 'https://your-app.com/callback',
+  notificationId: 'your_notification_id',
+);
+
+// Production environment
+final config = PaymentConfig.pesaPalProduction(
+  apiKey: 'your_bearer_token',
+  apiSecret: 'your_secret',
+  callbackUrl: 'https://your-app.com/callback',
+  notificationId: 'your_notification_id',
+);
+```
+
+### API Endpoints
+
+The package integrates with the following PesaPal API endpoints:
+
+**Sandbox Environment:**
+
+- Base URL: `https://cybqa.pesapal.com/pesapalv3`
+- `POST /v3/api/Transactions/SubmitOrderRequest` - Submit payment order
+- `GET /v3/api/Transactions/GetTransactionStatus` - Get transaction status
+
+**Production Environment:**
+
+- Base URL: `https://pay.pesapal.com/v3`
+- `POST /v3/api/Transactions/SubmitOrderRequest` - Submit payment order
+- `GET /v3/api/Transactions/GetTransactionStatus` - Get transaction status
+
+### Response Handling
+
+```dart
+final response = await client.processPayment(request);
+
+// Check if payment is pending (requires redirect)
+if (response.isPending) {
+  final redirectUrl = response.data?['redirect_url'];
+  // Open redirectUrl in WebView or browser
+}
+
+// Check transaction status later
+final statusResponse = await client.getTransaction(response.transactionId);
+```
+
 ## Testing
 
 Run the tests to ensure everything works correctly:
@@ -209,6 +324,7 @@ flutter test
 - Use appropriate payment methods for your use case
 - Implement proper error handling and user feedback
 - Test thoroughly in sandbox environment before going live
+- Handle PesaPal redirect URLs properly in your UI
 
 ### Contributing
 

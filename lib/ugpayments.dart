@@ -11,7 +11,10 @@ export 'src/models/payment_response.dart';
 export 'src/models/payment_status.dart';
 export 'src/models/transaction.dart';
 
-// Payment methods
+// Payment providers
+export 'src/providers/pesapal_provider.dart';
+
+// Payment methods (legacy - now using providers)
 export 'src/methods/mobile_money.dart';
 export 'src/methods/bank_transfer.dart';
 export 'src/methods/card_payment.dart';

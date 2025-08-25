@@ -1,6 +1,6 @@
 /// Configuration settings for the payment client.
 class PaymentConfig {
-  /// The API key for authentication.
+  /// The API key for authentication (Bearer token for PesaPal).
   final String apiKey;
 
   /// The API secret for authentication.
@@ -31,6 +31,56 @@ class PaymentConfig {
     this.enableDebugLogging = false,
     this.additionalConfig,
   });
+
+  /// Creates a PaymentConfig for PesaPal sandbox/testing environment.
+  factory PaymentConfig.pesaPalSandbox({
+    required String apiKey,
+    required String apiSecret,
+    String baseUrl = 'https://cybqa.pesapal.com/pesapalv3',
+    int timeoutSeconds = 30,
+    bool enableDebugLogging = true,
+    String? callbackUrl,
+    String? notificationId,
+  }) {
+    return PaymentConfig(
+      apiKey: apiKey,
+      apiSecret: apiSecret,
+      baseUrl: baseUrl,
+      environment: 'sandbox',
+      timeoutSeconds: timeoutSeconds,
+      enableDebugLogging: enableDebugLogging,
+      additionalConfig: {
+        if (callbackUrl != null) 'callback_url': callbackUrl,
+        if (notificationId != null) 'notification_id': notificationId,
+        'provider': 'pesapal',
+      },
+    );
+  }
+
+  /// Creates a PaymentConfig for PesaPal production environment.
+  factory PaymentConfig.pesaPalProduction({
+    required String apiKey,
+    required String apiSecret,
+    String baseUrl = 'https://pay.pesapal.com/v3',
+    int timeoutSeconds = 30,
+    bool enableDebugLogging = false,
+    String? callbackUrl,
+    String? notificationId,
+  }) {
+    return PaymentConfig(
+      apiKey: apiKey,
+      apiSecret: apiSecret,
+      baseUrl: baseUrl,
+      environment: 'production',
+      timeoutSeconds: timeoutSeconds,
+      enableDebugLogging: enableDebugLogging,
+      additionalConfig: {
+        if (callbackUrl != null) 'callback_url': callbackUrl,
+        if (notificationId != null) 'notification_id': notificationId,
+        'provider': 'pesapal',
+      },
+    );
+  }
 
   /// Creates a PaymentConfig for sandbox/testing environment.
   factory PaymentConfig.sandbox({
@@ -102,8 +152,17 @@ class PaymentConfig {
   /// Returns true if this is a production configuration.
   bool get isProduction => environment == 'production';
 
+  /// Returns true if this is a PesaPal configuration.
+  bool get isPesaPal => additionalConfig?['provider'] == 'pesapal';
+
+  /// Gets the callback URL for PesaPal.
+  String? get callbackUrl => additionalConfig?['callback_url'];
+
+  /// Gets the notification ID for PesaPal.
+  String? get notificationId => additionalConfig?['notification_id'];
+
   @override
   String toString() {
-    return 'PaymentConfig(environment: $environment, baseUrl: $baseUrl)';
+    return 'PaymentConfig(environment: $environment, baseUrl: $baseUrl, provider: ${additionalConfig?['provider'] ?? 'generic'})';
   }
 }

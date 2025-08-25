@@ -36,6 +36,7 @@ class PaymentValidator {
   /// Validates a payment method.
   static bool isValidPaymentMethod(String paymentMethod) {
     final validMethods = [
+      'PESAPAL',
       'MOBILE_MONEY',
       'BANK_TRANSFER',
       'CARD_PAYMENT',

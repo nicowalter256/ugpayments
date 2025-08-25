@@ -2,6 +2,13 @@
 
 - Initial release of the ugpayments package
 - Core payment functionality with support for multiple payment methods
+- **PesaPal Integration**: Full integration with PesaPal payment gateway
+  - Order submission via PesaPal API
+  - Transaction status tracking
+  - Redirect URL handling
+  - Callback notifications
+  - Correct sandbox URL: https://cybqa.pesapal.com/pesapalv3
+  - Correct production URL: https://pay.pesapal.com/v3
 - Mobile money payment processing (MTN, Airtel, M-Pesa)
 - Bank transfer payment processing
 - Card payment processing with validation
@@ -9,5 +16,7 @@
 - Encryption and security utilities
 - JSON serialization support for all models
 - Robust error handling with specific exception types
-- Complete test coverage
+- Complete test coverage (32 tests)
 - Full documentation and usage examples
+- PesaPal-specific configuration options
+- Provider-based architecture for extensibility
