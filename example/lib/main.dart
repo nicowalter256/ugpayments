@@ -63,15 +63,15 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
     // Initialize with configuration from config.dart
     final config = PesaPalConfig.useProduction
         ? PaymentConfig.pesaPalProduction(
-            apiKey: PesaPalConfig.apiKey,
-            apiSecret: PesaPalConfig.apiSecret,
+            consumerKey: PesaPalConfig.consumerKey,
+            consumerSecret: PesaPalConfig.consumerSecret,
             callbackUrl: PesaPalConfig.callbackUrl,
             notificationId: PesaPalConfig.notificationId,
             enableDebugLogging: PesaPalConfig.enableDebugLogging,
           )
         : PaymentConfig.pesaPalSandbox(
-            apiKey: PesaPalConfig.apiKey,
-            apiSecret: PesaPalConfig.apiSecret,
+            consumerKey: PesaPalConfig.consumerKey,
+            consumerSecret: PesaPalConfig.consumerSecret,
             callbackUrl: PesaPalConfig.callbackUrl,
             notificationId: PesaPalConfig.notificationId,
             enableDebugLogging: PesaPalConfig.enableDebugLogging,

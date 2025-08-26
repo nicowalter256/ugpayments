@@ -9,8 +9,8 @@ void main() {
 
     setUp(() {
       config = PaymentConfig.pesaPalSandbox(
-        apiKey: 'test_key',
-        apiSecret: 'test_secret',
+        consumerKey: 'test_key',
+        consumerSecret: 'test_secret',
         callbackUrl: 'https://test.com/callback',
         notificationId: 'test-notification-id',
       );
@@ -78,8 +78,8 @@ void main() {
 
     setUp(() {
       config = PaymentConfig.pesaPalSandbox(
-        apiKey: 'test_bearer_token',
-        apiSecret: 'test_secret',
+        consumerKey: 'test_bearer_token',
+        consumerSecret: 'test_secret',
         callbackUrl: 'https://test.com/callback',
         notificationId: 'test-notification-id',
       );
@@ -100,8 +100,8 @@ void main() {
   group('PaymentConfig Tests', () {
     test('should create PesaPal sandbox configuration', () {
       final config = PaymentConfig.pesaPalSandbox(
-        apiKey: 'test_key',
-        apiSecret: 'test_secret',
+        consumerKey: 'test_key',
+        consumerSecret: 'test_secret',
         callbackUrl: 'https://test.com/callback',
         notificationId: 'test-notification-id',
       );
@@ -115,8 +115,8 @@ void main() {
 
     test('should create PesaPal production configuration', () {
       final config = PaymentConfig.pesaPalProduction(
-        apiKey: 'test_key',
-        apiSecret: 'test_secret',
+        consumerKey: 'test_key',
+        consumerSecret: 'test_secret',
         callbackUrl: 'https://test.com/callback',
         notificationId: 'test-notification-id',
       );
@@ -130,8 +130,8 @@ void main() {
 
     test('should create generic sandbox configuration', () {
       final config = PaymentConfig.sandbox(
-        apiKey: 'test_key',
-        apiSecret: 'test_secret',
+        consumerKey: 'test_key',
+        consumerSecret: 'test_secret',
       );
 
       expect(config.isSandbox, isTrue);
@@ -141,8 +141,8 @@ void main() {
 
     test('should create generic production configuration', () {
       final config = PaymentConfig.production(
-        apiKey: 'test_key',
-        apiSecret: 'test_secret',
+        consumerKey: 'test_key',
+        consumerSecret: 'test_secret',
       );
 
       expect(config.isProduction, isTrue);

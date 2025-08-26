@@ -7,13 +7,14 @@ class PesaPalConfig {
   // SANDBOX CREDENTIALS (FOR TESTING)
   // ============================================================================
 
-  /// Your PesaPal sandbox bearer token
+  /// Your PesaPal sandbox consumer key
   /// Get this from your PesaPal sandbox dashboard
-  static const String sandboxApiKey = 'your_sandbox_bearer_token_here';
+  static const String sandboxConsumerKey = 'your_sandbox_consumer_key_here';
 
-  /// Your PesaPal sandbox API secret
+  /// Your PesaPal sandbox consumer secret
   /// Get this from your PesaPal sandbox dashboard
-  static const String sandboxApiSecret = 'your_sandbox_api_secret_here';
+  static const String sandboxConsumerSecret =
+      'your_sandbox_consumer_secret_here';
 
   /// Your callback URL for sandbox testing
   /// This should be a URL that can receive payment notifications
@@ -29,13 +30,15 @@ class PesaPalConfig {
   // PRODUCTION CREDENTIALS (FOR LIVE PAYMENTS)
   // ============================================================================
 
-  /// Your PesaPal production bearer token
+  /// Your PesaPal production consumer key
   /// Get this from your PesaPal production dashboard
-  static const String productionApiKey = 'your_production_bearer_token_here';
+  static const String productionConsumerKey =
+      'your_production_consumer_key_here';
 
-  /// Your PesaPal production API secret
+  /// Your PesaPal production consumer secret
   /// Get this from your PesaPal production dashboard
-  static const String productionApiSecret = 'your_production_api_secret_here';
+  static const String productionConsumerSecret =
+      'your_production_consumer_secret_here';
 
   /// Your callback URL for production
   /// This should be a URL that can receive payment notifications
@@ -66,12 +69,13 @@ class PesaPalConfig {
   // HELPER METHODS
   // ============================================================================
 
-  /// Get the current API key based on environment
-  static String get apiKey => useProduction ? productionApiKey : sandboxApiKey;
+  /// Get the current consumer key based on environment
+  static String get consumerKey =>
+      useProduction ? productionConsumerKey : sandboxConsumerKey;
 
-  /// Get the current API secret based on environment
-  static String get apiSecret =>
-      useProduction ? productionApiSecret : sandboxApiSecret;
+  /// Get the current consumer secret based on environment
+  static String get consumerSecret =>
+      useProduction ? productionConsumerSecret : sandboxConsumerSecret;
 
   /// Get the current callback URL based on environment
   static String get callbackUrl =>
@@ -96,11 +100,11 @@ class PesaPalConfig {
   /// Check if credentials are properly configured
   static bool get isConfigured {
     if (useProduction) {
-      return productionApiKey != 'your_production_bearer_token_here' &&
-          productionApiSecret != 'your_production_api_secret_here';
+      return productionConsumerKey != 'your_production_consumer_key_here' &&
+          productionConsumerSecret != 'your_production_consumer_secret_here';
     } else {
-      return sandboxApiKey != 'your_sandbox_bearer_token_here' &&
-          sandboxApiSecret != 'your_sandbox_api_secret_here';
+      return sandboxConsumerKey != 'your_sandbox_consumer_key_here' &&
+          sandboxConsumerSecret != 'your_sandbox_consumer_secret_here';
     }
   }
 
@@ -122,14 +126,14 @@ class PesaPalConfig {
 
 1. Never commit real credentials to version control
 2. Use environment variables in production
-3. Keep your API keys secure
+3. Keep your consumer keys and secrets secure
 4. Regularly rotate your credentials
 5. Monitor your API usage
 
 For production apps, consider using:
 - Environment variables
 - Secure key storage
-- API key rotation
+- Credential rotation
 - Request signing
 ''';
 }

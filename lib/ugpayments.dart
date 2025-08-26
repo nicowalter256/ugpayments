@@ -3,6 +3,7 @@
 export 'src/core/payment_client.dart';
 export 'src/core/payment_config.dart';
 export 'src/core/payment_exception.dart';
+export 'src/core/token_manager.dart';
 
 // Models
 export 'src/models/payment_request.dart';

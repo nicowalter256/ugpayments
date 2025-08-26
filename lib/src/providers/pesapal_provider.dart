@@ -5,26 +5,33 @@ import '../models/payment_response.dart';
 import '../models/payment_status.dart';
 import '../core/payment_config.dart';
 import '../core/payment_exception.dart';
+import '../core/token_manager.dart';
 
 /// PesaPal payment provider implementation.
 class PesaPalProvider {
   final PaymentConfig _config;
   final HttpClient _httpClient;
+  final TokenManager _tokenManager;
 
   /// Creates a new PesaPal provider.
-  PesaPalProvider(this._config) : _httpClient = HttpClient();
+  PesaPalProvider(this._config)
+    : _httpClient = HttpClient(),
+      _tokenManager = TokenManager(_config);
 
   /// Submits a payment order to PesaPal.
   Future<PaymentResponse> submitOrder(PaymentRequest request) async {
     try {
+      // Get authentication token
+      final token = await _tokenManager.getToken();
+
       final url = Uri.parse(
-        '${_config.baseUrl}/v3/api/Transactions/SubmitOrderRequest',
+        '${_config.baseUrl}/api/Transactions/SubmitOrderRequest',
       );
 
       final requestBody = _buildOrderRequestBody(request);
 
       final httpRequest = await _httpClient.postUrl(url);
-      httpRequest.headers.set('Authorization', 'Bearer ${_config.apiKey}');
+      httpRequest.headers.set('Authorization', 'Bearer $token');
       httpRequest.headers.set('Content-Type', 'application/json');
       httpRequest.write(json.encode(requestBody));
 
@@ -47,12 +54,15 @@ class PesaPalProvider {
   /// Gets the status of a transaction.
   Future<PaymentResponse> getTransactionStatus(String orderTrackingId) async {
     try {
+      // Get authentication token
+      final token = await _tokenManager.getToken();
+
       final url = Uri.parse(
-        '${_config.baseUrl}/v3/api/Transactions/GetTransactionStatus?orderTrackingId=$orderTrackingId',
+        '${_config.baseUrl}/api/Transactions/GetTransactionStatus?orderTrackingId=$orderTrackingId',
       );
 
       final request = await _httpClient.getUrl(url);
-      request.headers.set('Authorization', 'Bearer ${_config.apiKey}');
+      request.headers.set('Authorization', 'Bearer $token');
       request.headers.set('Content-Type', 'application/json');
 
       final response = await request.close();
@@ -198,8 +208,9 @@ class PesaPalProvider {
     return 'NOTIF_${DateTime.now().millisecondsSinceEpoch}';
   }
 
-  /// Disposes the HTTP client.
+  /// Disposes the HTTP client and token manager.
   void dispose() {
     _httpClient.close();
+    _tokenManager.dispose();
   }
 }

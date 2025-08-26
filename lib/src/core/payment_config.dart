@@ -1,10 +1,10 @@
 /// Configuration settings for the payment client.
 class PaymentConfig {
-  /// The API key for authentication (Bearer token for PesaPal).
-  final String apiKey;
+  /// The consumer key for PesaPal authentication.
+  final String consumerKey;
 
-  /// The API secret for authentication.
-  final String apiSecret;
+  /// The consumer secret for PesaPal authentication.
+  final String consumerSecret;
 
   /// The base URL for the payment API.
   final String baseUrl;
@@ -23,8 +23,8 @@ class PaymentConfig {
 
   /// Creates a new PaymentConfig.
   const PaymentConfig({
-    required this.apiKey,
-    required this.apiSecret,
+    required this.consumerKey,
+    required this.consumerSecret,
     required this.baseUrl,
     this.environment = 'production',
     this.timeoutSeconds = 30,
@@ -34,8 +34,8 @@ class PaymentConfig {
 
   /// Creates a PaymentConfig for PesaPal sandbox/testing environment.
   factory PaymentConfig.pesaPalSandbox({
-    required String apiKey,
-    required String apiSecret,
+    required String consumerKey,
+    required String consumerSecret,
     String baseUrl = 'https://cybqa.pesapal.com/pesapalv3',
     int timeoutSeconds = 30,
     bool enableDebugLogging = true,
@@ -43,8 +43,8 @@ class PaymentConfig {
     String? notificationId,
   }) {
     return PaymentConfig(
-      apiKey: apiKey,
-      apiSecret: apiSecret,
+      consumerKey: consumerKey,
+      consumerSecret: consumerSecret,
       baseUrl: baseUrl,
       environment: 'sandbox',
       timeoutSeconds: timeoutSeconds,
@@ -59,8 +59,8 @@ class PaymentConfig {
 
   /// Creates a PaymentConfig for PesaPal production environment.
   factory PaymentConfig.pesaPalProduction({
-    required String apiKey,
-    required String apiSecret,
+    required String consumerKey,
+    required String consumerSecret,
     String baseUrl = 'https://pay.pesapal.com/v3',
     int timeoutSeconds = 30,
     bool enableDebugLogging = false,
@@ -68,8 +68,8 @@ class PaymentConfig {
     String? notificationId,
   }) {
     return PaymentConfig(
-      apiKey: apiKey,
-      apiSecret: apiSecret,
+      consumerKey: consumerKey,
+      consumerSecret: consumerSecret,
       baseUrl: baseUrl,
       environment: 'production',
       timeoutSeconds: timeoutSeconds,
@@ -84,15 +84,15 @@ class PaymentConfig {
 
   /// Creates a PaymentConfig for sandbox/testing environment.
   factory PaymentConfig.sandbox({
-    required String apiKey,
-    required String apiSecret,
+    required String consumerKey,
+    required String consumerSecret,
     String baseUrl = 'https://sandbox-api.ugpayments.com',
     int timeoutSeconds = 30,
     bool enableDebugLogging = true,
   }) {
     return PaymentConfig(
-      apiKey: apiKey,
-      apiSecret: apiSecret,
+      consumerKey: consumerKey,
+      consumerSecret: consumerSecret,
       baseUrl: baseUrl,
       environment: 'sandbox',
       timeoutSeconds: timeoutSeconds,
@@ -102,15 +102,15 @@ class PaymentConfig {
 
   /// Creates a PaymentConfig for production environment.
   factory PaymentConfig.production({
-    required String apiKey,
-    required String apiSecret,
+    required String consumerKey,
+    required String consumerSecret,
     String baseUrl = 'https://api.ugpayments.com',
     int timeoutSeconds = 30,
     bool enableDebugLogging = false,
   }) {
     return PaymentConfig(
-      apiKey: apiKey,
-      apiSecret: apiSecret,
+      consumerKey: consumerKey,
+      consumerSecret: consumerSecret,
       baseUrl: baseUrl,
       environment: 'production',
       timeoutSeconds: timeoutSeconds,
@@ -121,8 +121,8 @@ class PaymentConfig {
   /// Creates a PaymentConfig from a JSON map.
   factory PaymentConfig.fromJson(Map<String, dynamic> json) {
     return PaymentConfig(
-      apiKey: json['apiKey'] ?? '',
-      apiSecret: json['apiSecret'] ?? '',
+      consumerKey: json['consumerKey'] ?? '',
+      consumerSecret: json['consumerSecret'] ?? '',
       baseUrl: json['baseUrl'] ?? '',
       environment: json['environment'] ?? 'production',
       timeoutSeconds: json['timeoutSeconds'] ?? 30,
@@ -136,8 +136,8 @@ class PaymentConfig {
   /// Converts the PaymentConfig to a JSON map.
   Map<String, dynamic> toJson() {
     return {
-      'apiKey': apiKey,
-      'apiSecret': apiSecret,
+      'consumerKey': consumerKey,
+      'consumerSecret': consumerSecret,
       'baseUrl': baseUrl,
       'environment': environment,
       'timeoutSeconds': timeoutSeconds,

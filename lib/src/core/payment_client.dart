@@ -6,14 +6,18 @@ import '../models/payment_status.dart';
 import '../models/transaction.dart';
 import 'payment_config.dart';
 import 'payment_exception.dart';
+import 'token_manager.dart';
 
 /// Main client for handling payment operations in Uganda.
 class PaymentClient {
   final PaymentConfig _config;
   final HttpClient _httpClient;
+  final TokenManager _tokenManager;
 
   /// Creates a new PaymentClient with the given configuration.
-  PaymentClient(this._config) : _httpClient = HttpClient();
+  PaymentClient(this._config)
+    : _httpClient = HttpClient(),
+      _tokenManager = TokenManager(_config);
 
   /// Processes a payment request using PesaPal API.
   ///
@@ -37,12 +41,15 @@ class PaymentClient {
   /// Retrieves transaction details by transaction ID.
   Future<Transaction?> getTransaction(String transactionId) async {
     try {
+      // Get authentication token
+      final token = await _tokenManager.getToken();
+
       final url = Uri.parse(
-        '${_config.baseUrl}/v3/api/Transactions/GetTransactionStatus?orderTrackingId=$transactionId',
+        '${_config.baseUrl}/api/Transactions/GetTransactionStatus?orderTrackingId=$transactionId',
       );
 
       final request = await _httpClient.getUrl(url);
-      request.headers.set('Authorization', 'Bearer ${_config.apiKey}');
+      request.headers.set('Authorization', 'Bearer $token');
       request.headers.set('Content-Type', 'application/json');
 
       final response = await request.close();
@@ -109,8 +116,11 @@ class PaymentClient {
       },
     };
 
+    // Get authentication token
+    final token = await _tokenManager.getToken();
+
     final httpRequest = await _httpClient.postUrl(url);
-    httpRequest.headers.set('Authorization', 'Bearer ${_config.apiKey}');
+    httpRequest.headers.set('Authorization', 'Bearer $token');
     httpRequest.headers.set('Content-Type', 'application/json');
     httpRequest.write(json.encode(requestBody));
 
@@ -183,8 +193,9 @@ class PaymentClient {
     return 'NOTIF_${DateTime.now().millisecondsSinceEpoch}';
   }
 
-  /// Disposes the HTTP client.
+  /// Disposes the HTTP client and token manager.
   void dispose() {
     _httpClient.close();
+    _tokenManager.dispose();
   }
 }

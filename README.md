@@ -31,8 +31,8 @@ import 'package:ugpayments/ugpayments.dart';
 
 // Create a PesaPal payment configuration
 final config = PaymentConfig.pesaPalSandbox(
-  apiKey: 'your_pesapal_bearer_token',
-  apiSecret: 'your_api_secret',
+  consumerKey: 'your_pesapal_consumer_key',
+  consumerSecret: 'your_consumer_secret',
   callbackUrl: 'https://your-app.com/payment-callback',
   notificationId: 'your_notification_id',
 );
@@ -248,21 +248,32 @@ try {
 
 ## PesaPal Integration Details
 
+### Simplified Authentication
+
+The package now uses automatic token authentication. You only need to provide your `consumer_key` and `consumer_secret` - the package will automatically:
+
+1. Fetch authentication tokens from PesaPal's `/api/Auth/RequestToken` endpoint
+2. Cache tokens and reuse them until they expire
+3. Automatically refresh tokens when needed
+4. Handle all authentication headers for API requests
+
+This eliminates the need for you to manually manage bearer tokens.
+
 ### Configuration
 
 ```dart
 // Sandbox environment
 final config = PaymentConfig.pesaPalSandbox(
-  apiKey: 'your_bearer_token',
-  apiSecret: 'your_secret',
+  consumerKey: 'your_consumer_key',
+  consumerSecret: 'your_consumer_secret',
   callbackUrl: 'https://your-app.com/callback',
   notificationId: 'your_notification_id',
 );
 
 // Production environment
 final config = PaymentConfig.pesaPalProduction(
-  apiKey: 'your_bearer_token',
-  apiSecret: 'your_secret',
+  consumerKey: 'your_production_consumer_key',
+  consumerSecret: 'your_production_consumer_secret',
   callbackUrl: 'https://your-app.com/callback',
   notificationId: 'your_notification_id',
 );
@@ -275,14 +286,16 @@ The package integrates with the following PesaPal API endpoints:
 **Sandbox Environment:**
 
 - Base URL: `https://cybqa.pesapal.com/pesapalv3`
-- `POST /v3/api/Transactions/SubmitOrderRequest` - Submit payment order
-- `GET /v3/api/Transactions/GetTransactionStatus` - Get transaction status
+- `POST /api/Auth/RequestToken` - Get authentication token
+- `POST /api/Transactions/SubmitOrderRequest` - Submit payment order
+- `GET /api/Transactions/GetTransactionStatus` - Get transaction status
 
 **Production Environment:**
 
 - Base URL: `https://pay.pesapal.com/v3`
-- `POST /v3/api/Transactions/SubmitOrderRequest` - Submit payment order
-- `GET /v3/api/Transactions/GetTransactionStatus` - Get transaction status
+- `POST /api/Auth/RequestToken` - Get authentication token
+- `POST /api/Transactions/SubmitOrderRequest` - Submit payment order
+- `GET /api/Transactions/GetTransactionStatus` - Get transaction status
 
 ### Response Handling
 
