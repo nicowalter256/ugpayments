@@ -1,6 +1,6 @@
 name: ugpayments
 description: "A comprehensive Flutter package for processing payments in Uganda with PesaPal integration, mobile money, bank transfers, and card payments."
-version: 0.0.1
+version: 0.1.0
 homepage: https://github.com/nicowalter256/ugpayments
 repository: https://github.com/nicowalter256/ugpayments
 issue_tracker: https://github.com/nicowalter256/ugpayments/issues

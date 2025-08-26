@@ -1,4 +1,3 @@
-
 // Core payment functionality
 export 'src/core/payment_client.dart';
 export 'src/core/payment_config.dart';
