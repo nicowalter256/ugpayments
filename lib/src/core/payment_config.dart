@@ -41,7 +41,10 @@ class PaymentConfig {
     bool enableDebugLogging = true,
     String? callbackUrl,
     String? notificationId,
+    String? ipnUrl,
+    String ipnNotificationType = 'GET',
   }) {
+    final effectiveIpnUrl = ipnUrl ?? callbackUrl;
     return PaymentConfig(
       consumerKey: consumerKey,
       consumerSecret: consumerSecret,
@@ -52,6 +55,8 @@ class PaymentConfig {
       additionalConfig: {
         if (callbackUrl != null) 'callback_url': callbackUrl,
         if (notificationId != null) 'notification_id': notificationId,
+        if (effectiveIpnUrl != null) 'ipn_url': effectiveIpnUrl,
+        'ipn_notification_type': ipnNotificationType,
         'provider': 'pesapal',
       },
     );
@@ -66,7 +71,10 @@ class PaymentConfig {
     bool enableDebugLogging = false,
     String? callbackUrl,
     String? notificationId,
+    String? ipnUrl,
+    String ipnNotificationType = 'GET',
   }) {
+    final effectiveIpnUrl = ipnUrl ?? callbackUrl;
     return PaymentConfig(
       consumerKey: consumerKey,
       consumerSecret: consumerSecret,
@@ -77,6 +85,8 @@ class PaymentConfig {
       additionalConfig: {
         if (callbackUrl != null) 'callback_url': callbackUrl,
         if (notificationId != null) 'notification_id': notificationId,
+        if (effectiveIpnUrl != null) 'ipn_url': effectiveIpnUrl,
+        'ipn_notification_type': ipnNotificationType,
         'provider': 'pesapal',
       },
     );
@@ -161,8 +171,42 @@ class PaymentConfig {
   /// Gets the notification ID for PesaPal.
   String? get notificationId => additionalConfig?['notification_id'];
 
+  /// IPN callback URL used for `URLSetup/RegisterIPN`.
+  ///
+  /// If you don't set it explicitly, factories default it to `callbackUrl`.
+  String? get ipnUrl => additionalConfig?['ipn_url'];
+
+  /// PesaPal IPN notification type (for example: `GET`).
+  String get ipnNotificationType =>
+      additionalConfig?['ipn_notification_type']?.toString() ?? 'GET';
+
   @override
   String toString() {
     return 'PaymentConfig(environment: $environment, baseUrl: $baseUrl, provider: ${additionalConfig?['provider'] ?? 'generic'})';
+  }
+
+  /// PesaPal auth endpoint for fetching an auth token.
+  ///
+  /// `baseUrl` is expected to already contain the PesaPal version prefix
+  /// (for example: `https://pay.pesapal.com/v3`).
+  Uri get pesaPalAuthRequestTokenUri =>
+      Uri.parse('$baseUrl/api/Auth/RequestToken');
+
+  /// PesaPal submit endpoint for creating a payment order.
+  ///
+  /// `baseUrl` is expected to already contain the PesaPal version prefix
+  /// (for example: `https://pay.pesapal.com/v3`).
+  Uri get pesaPalSubmitOrderRequestUri =>
+      Uri.parse('$baseUrl/api/Transactions/SubmitOrderRequest');
+
+  /// PesaPal endpoint for creating/registering an IPN URL.
+  Uri get pesaPalRegisterIpnUri =>
+      Uri.parse('$baseUrl/api/URLSetup/RegisterIPN');
+
+  /// PesaPal transaction status endpoint.
+  Uri pesaPalGetTransactionStatusUri(String orderTrackingId) {
+    return Uri.parse(
+      '$baseUrl/api/Transactions/GetTransactionStatus?orderTrackingId=$orderTrackingId',
+    );
   }
 }

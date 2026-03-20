@@ -43,7 +43,6 @@ This is a complete Flutter example application demonstrating how to use the ugpa
      apiKey: 'your_actual_pesapal_bearer_token', // Replace this
      apiSecret: 'your_actual_api_secret', // Replace this
      callbackUrl: 'https://your-app.com/payment-callback',
-     notificationId: 'your_actual_notification_id',
      enableDebugLogging: true,
    );
    ```
@@ -120,7 +119,6 @@ final config = PaymentConfig.pesaPalSandbox(
   apiKey: const String.fromEnvironment('PESAPAL_API_KEY'),
   apiSecret: const String.fromEnvironment('PESAPAL_API_SECRET'),
   callbackUrl: const String.fromEnvironment('PESAPAL_CALLBACK_URL'),
-  notificationId: const String.fromEnvironment('PESAPAL_NOTIFICATION_ID'),
 );
 ```
 

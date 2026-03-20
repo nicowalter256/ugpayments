@@ -44,9 +44,7 @@ class PaymentClient {
       // Get authentication token
       final token = await _tokenManager.getToken();
 
-      final url = Uri.parse(
-        '${_config.baseUrl}/api/Transactions/GetTransactionStatus?orderTrackingId=$transactionId',
-      );
+      final url = _config.pesaPalGetTransactionStatusUri(transactionId);
 
       final request = await _httpClient.getUrl(url);
       request.headers.set('Authorization', 'Bearer $token');
@@ -85,9 +83,14 @@ class PaymentClient {
 
   /// Submits an order to PesaPal API.
   Future<PaymentResponse> _submitOrderToPesaPal(PaymentRequest request) async {
-    final url = Uri.parse(
-      '${_config.baseUrl}/v3/api/Transactions/SubmitOrderRequest',
-    );
+    final url = _config.pesaPalSubmitOrderRequestUri;
+
+    // Get authentication token
+    final token = await _tokenManager.getToken();
+
+    // Ensure we have a valid `notification_id` by registering an IPN URL
+    // when it isn't provided by the consumer of the package.
+    final notificationId = await _resolveNotificationId(token);
 
     final requestBody = {
       'id': request.merchantReference ?? _generateMerchantReference(),
@@ -97,9 +100,7 @@ class PaymentClient {
       'callback_url':
           _config.additionalConfig?['callback_url'] ??
           'https://www.myapplication.com/response-page',
-      'notification_id':
-          _config.additionalConfig?['notification_id'] ??
-          _generateNotificationId(),
+      'notification_id': notificationId,
       'billing_address': {
         'email_address': request.email ?? '',
         'phone_number': request.phoneNumber ?? '',
@@ -115,9 +116,6 @@ class PaymentClient {
         'zip_code': request.metadata?['zip_code'] ?? '',
       },
     };
-
-    // Get authentication token
-    final token = await _tokenManager.getToken();
 
     final httpRequest = await _httpClient.postUrl(url);
     httpRequest.headers.set('Authorization', 'Bearer $token');
@@ -188,9 +186,65 @@ class PaymentClient {
     return 'REF_${DateTime.now().millisecondsSinceEpoch}';
   }
 
-  /// Generates a notification ID.
-  String _generateNotificationId() {
-    return 'NOTIF_${DateTime.now().millisecondsSinceEpoch}';
+  Future<String> _resolveNotificationId(String token) async {
+    final existing = _config.notificationId;
+    if (existing != null && existing.trim().isNotEmpty) {
+      return existing;
+    }
+
+    final ipnUrl = _config.ipnUrl;
+    if (ipnUrl == null || ipnUrl.trim().isEmpty) {
+      throw PaymentException(
+        'Missing IPN URL. Provide callbackUrl (used as IPN url by default) or set ipnUrl in PaymentConfig.',
+      );
+    }
+
+    return _registerIpnAndReturnId(
+      token: token,
+      ipnUrl: ipnUrl,
+      ipnNotificationType: _config.ipnNotificationType,
+    );
+  }
+
+  Future<String> _registerIpnAndReturnId({
+    required String token,
+    required String ipnUrl,
+    required String ipnNotificationType,
+  }) async {
+    try {
+      final httpRequest = await _httpClient.postUrl(_config.pesaPalRegisterIpnUri);
+      httpRequest.headers.set('Authorization', 'Bearer $token');
+      httpRequest.headers.set('Accept', 'application/json');
+      httpRequest.headers.set('Content-Type', 'application/json');
+
+      httpRequest.write(
+        json.encode({
+          'url': ipnUrl,
+          'ipn_notification_type': ipnNotificationType,
+        }),
+      );
+
+      final response = await httpRequest.close();
+      final responseBody = await response.transform(utf8.decoder).join();
+
+      if (response.statusCode != 200) {
+        throw PaymentException(
+          'Failed to register IPN: ${response.statusCode} - $responseBody',
+        );
+      }
+
+      final data = json.decode(responseBody) as Map<String, dynamic>;
+      final ipnId = data['ipn_id'] as String?;
+      if (ipnId == null || ipnId.trim().isEmpty) {
+        throw PaymentException(
+          'IPN registration succeeded but ipn_id was missing. Response: $data',
+        );
+      }
+
+      return ipnId;
+    } catch (e) {
+      throw PaymentException('Failed to register IPN: $e');
+    }
   }
 
   /// Disposes the HTTP client and token manager.

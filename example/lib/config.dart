@@ -21,11 +21,6 @@ class PesaPalConfig {
   static const String sandboxCallbackUrl =
       'https://your-app.com/sandbox-callback';
 
-  /// Your notification ID for sandbox testing
-  /// Get this from your PesaPal sandbox dashboard
-  static const String sandboxNotificationId =
-      'your_sandbox_notification_id_here';
-
   // ============================================================================
   // PRODUCTION CREDENTIALS (FOR LIVE PAYMENTS)
   // ============================================================================
@@ -44,11 +39,6 @@ class PesaPalConfig {
   /// This should be a URL that can receive payment notifications
   static const String productionCallbackUrl =
       'https://your-app.com/production-callback';
-
-  /// Your notification ID for production
-  /// Get this from your PesaPal production dashboard
-  static const String productionNotificationId =
-      'your_production_notification_id_here';
 
   // ============================================================================
   // ENVIRONMENT SETTINGS
@@ -80,10 +70,6 @@ class PesaPalConfig {
   /// Get the current callback URL based on environment
   static String get callbackUrl =>
       useProduction ? productionCallbackUrl : sandboxCallbackUrl;
-
-  /// Get the current notification ID based on environment
-  static String get notificationId =>
-      useProduction ? productionNotificationId : sandboxNotificationId;
 
   /// Get the current environment name
   static String get environment => useProduction ? 'Production' : 'Sandbox';

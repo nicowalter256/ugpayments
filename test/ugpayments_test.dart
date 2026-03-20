@@ -111,6 +111,23 @@ void main() {
       expect(config.callbackUrl, equals('https://test.com/callback'));
       expect(config.notificationId, equals('test-notification-id'));
       expect(config.baseUrl, equals('https://cybqa.pesapal.com/pesapalv3'));
+      // Default IPN url should follow callbackUrl when ipnUrl isn't set.
+      expect(config.ipnUrl, equals('https://test.com/callback'));
+      expect(config.ipnNotificationType, equals('GET'));
+      expect(
+        config.pesaPalAuthRequestTokenUri.toString(),
+        equals('https://cybqa.pesapal.com/pesapalv3/api/Auth/RequestToken'),
+      );
+      expect(
+        config.pesaPalSubmitOrderRequestUri.toString(),
+        equals('https://cybqa.pesapal.com/pesapalv3/api/Transactions/SubmitOrderRequest'),
+      );
+      expect(
+        config.pesaPalGetTransactionStatusUri('ORDER123').toString(),
+        equals(
+          'https://cybqa.pesapal.com/pesapalv3/api/Transactions/GetTransactionStatus?orderTrackingId=ORDER123',
+        ),
+      );
     });
 
     test('should create PesaPal production configuration', () {
@@ -126,6 +143,26 @@ void main() {
       expect(config.callbackUrl, equals('https://test.com/callback'));
       expect(config.notificationId, equals('test-notification-id'));
       expect(config.baseUrl, equals('https://pay.pesapal.com/v3'));
+      expect(config.ipnUrl, equals('https://test.com/callback'));
+      expect(config.ipnNotificationType, equals('GET'));
+      expect(
+        config.pesaPalAuthRequestTokenUri.toString(),
+        equals('https://pay.pesapal.com/v3/api/Auth/RequestToken'),
+      );
+      expect(
+        config.pesaPalSubmitOrderRequestUri.toString(),
+        equals('https://pay.pesapal.com/v3/api/Transactions/SubmitOrderRequest'),
+      );
+      expect(
+        config.pesaPalGetTransactionStatusUri('ORDER123').toString(),
+        equals(
+          'https://pay.pesapal.com/v3/api/Transactions/GetTransactionStatus?orderTrackingId=ORDER123',
+        ),
+      );
+      expect(
+        config.pesaPalRegisterIpnUri.toString(),
+        equals('https://pay.pesapal.com/v3/api/URLSetup/RegisterIPN'),
+      );
     });
 
     test('should create generic sandbox configuration', () {

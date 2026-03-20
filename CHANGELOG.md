@@ -1,3 +1,9 @@
+## 0.1.1
+
+- Fix PesaPal redirect WebView getting stuck by enabling JavaScript, improving
+  navigation/error callbacks, and allowing third-party cookies on Android.
+- Remove unused notification id generator and switch token logging to `dart:developer`.
+
 ## 0.1.0
 
 - **BREAKING CHANGE**: Simplified PesaPal authentication

@@ -22,5 +22,8 @@ export 'src/methods/card_payment.dart';
 export 'src/utils/payment_validator.dart';
 export 'src/utils/encryption.dart';
 
+// Widgets
+export 'src/widgets/pesapal_redirect_webview_page.dart';
+
 // Constants
 export 'src/constants/payment_constants.dart';

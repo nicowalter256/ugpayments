@@ -7,7 +7,6 @@ void main() async {
     consumerKey: 'your_consumer_key_here',
     consumerSecret: 'your_consumer_secret_here',
     callbackUrl: 'https://your-app.com/payment-callback',
-    notificationId: 'your_notification_id',
     enableDebugLogging: true,
   );
 
@@ -72,7 +71,6 @@ void pesapalProviderExample() async {
     consumerKey: 'your_production_consumer_key',
     consumerSecret: 'your_production_consumer_secret',
     callbackUrl: 'https://your-app.com/callback',
-    notificationId: 'your_notification_id',
   );
 
   final pesapalProvider = PesaPalProvider(config);

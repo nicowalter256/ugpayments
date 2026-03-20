@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:developer';
 import 'payment_config.dart';
 import 'payment_exception.dart';
 
@@ -30,7 +31,7 @@ class TokenManager {
   /// Fetches a new authentication token from PesaPal.
   Future<String> _fetchNewToken() async {
     try {
-      final url = Uri.parse('${_config.baseUrl}/api/Auth/RequestToken');
+      final url = _config.pesaPalAuthRequestTokenUri;
 
       final requestBody = {
         'consumer_key': _config.consumerKey,
@@ -74,7 +75,7 @@ class TokenManager {
         }
 
         if (_config.enableDebugLogging) {
-          print('PesaPal: Successfully fetched new authentication token');
+          log('PesaPal: Successfully fetched new authentication token');
         }
 
         return token;

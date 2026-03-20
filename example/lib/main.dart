@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:ugpayments/ugpayments.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'config.dart';
@@ -12,9 +11,13 @@ void main() {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final colorScheme = ColorScheme.fromSeed(seedColor: Colors.indigo);
     return MaterialApp(
       title: 'UgPayments Example',
-      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+      theme: ThemeData(
+        colorScheme: colorScheme,
+        useMaterial3: true,
+      ),
       home: PaymentHomeScreen(),
     );
   }
@@ -66,14 +69,12 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
             consumerKey: PesaPalConfig.consumerKey,
             consumerSecret: PesaPalConfig.consumerSecret,
             callbackUrl: PesaPalConfig.callbackUrl,
-            notificationId: PesaPalConfig.notificationId,
             enableDebugLogging: PesaPalConfig.enableDebugLogging,
           )
         : PaymentConfig.pesaPalSandbox(
             consumerKey: PesaPalConfig.consumerKey,
             consumerSecret: PesaPalConfig.consumerSecret,
             callbackUrl: PesaPalConfig.callbackUrl,
-            notificationId: PesaPalConfig.notificationId,
             enableDebugLogging: PesaPalConfig.enableDebugLogging,
           );
 
@@ -143,7 +144,19 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
       );
 
       if (response.isPending && redirectUrl != null) {
-        _showPaymentDialog();
+        // Automatically open the redirect URL in a WebView so the user
+        // can complete payment without extra taps.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PaymentWebViewScreen(
+                url: redirectUrl!,
+                transactionId: response.transactionId,
+              ),
+            ),
+          );
+        });
       } else if (response.isSuccessful) {
         _showSuccessDialog(response);
       } else {
@@ -185,42 +198,6 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
       });
       _showErrorDialog('Error checking transaction: $e');
     }
-  }
-
-  void _showPaymentDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text('Complete Payment'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Your payment is pending. Please complete it by clicking the link below.',
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Transaction ID: $transactionId',
-              style: TextStyle(fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _openPaymentUrl();
-            },
-            child: Text('Open Payment'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showSuccessDialog(PaymentResponse response) {
@@ -292,43 +269,44 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
     );
   }
 
-  Future<void> _openPaymentUrl() async {
-    if (redirectUrl != null) {
-      final Uri url = Uri.parse(redirectUrl!);
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        _showErrorDialog('Could not open payment URL');
-      }
-    }
-  }
-
-  void _openPaymentWebView() {
-    if (redirectUrl != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PaymentWebViewScreen(
-            url: redirectUrl!,
-            transactionId: transactionId!,
-          ),
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('UgPayments Example'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('UgPayments • PesaPal'),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).colorScheme.primaryContainer,
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Complete Payment Flow',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Submit an order, then the app opens Pesapal for completion.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             Card(
               child: Padding(
                 padding: EdgeInsets.all(16),
@@ -408,38 +386,48 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton(
+                  child: FilledButton(
                     onPressed: isLoading ? null : processPayment,
                     child: isLoading
-                        ? SizedBox(
+                        ? const SizedBox(
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : Text('Process Payment'),
+                        : const Text('Submit Order'),
                   ),
                 ),
                 SizedBox(width: 8),
-                ElevatedButton(
+                FilledButton.tonal(
                   onPressed: isLoading ? null : checkTransactionStatus,
-                  child: Text('Check Status'),
+                  child: const Text('Check Status'),
                 ),
               ],
             ),
-            SizedBox(height: 16),
-            if (redirectUrl != null) ...[
-              ElevatedButton.icon(
-                onPressed: _openPaymentUrl,
-                icon: Icon(Icons.open_in_browser),
-                label: Text('Open Payment in Browser'),
+            const SizedBox(height: 16),
+            if (redirectUrl != null && lastPaymentStatus != null)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Redirect ready',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Pesapal redirect URL is prepared. Completing payment will open automatically.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 10),
+                      if (transactionId != null)
+                        Text('OrderTrackingId: $transactionId'),
+                    ],
+                  ),
+                ),
               ),
-              SizedBox(height: 8),
-              ElevatedButton.icon(
-                onPressed: _openPaymentWebView,
-                icon: Icon(Icons.web),
-                label: Text('Open Payment in WebView'),
-              ),
-            ],
             SizedBox(height: 16),
             Card(
               child: Padding(
