@@ -1,3 +1,8 @@
+## 0.1.2
+
+- Docs: sync READMEs with the latest PesaPal flow (consumerKey/consumerSecret
+  and automatic redirect WebView).
+
 ## 0.1.1
 
 - Fix PesaPal redirect WebView getting stuck by enabling JavaScript, improving
