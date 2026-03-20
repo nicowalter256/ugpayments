@@ -40,8 +40,8 @@ This is a complete Flutter example application demonstrating how to use the ugpa
 
    ```dart
    final config = PaymentConfig.pesaPalSandbox(
-     apiKey: 'your_actual_pesapal_bearer_token', // Replace this
-     apiSecret: 'your_actual_api_secret', // Replace this
+     consumerKey: 'your_sandbox_consumer_key',
+     consumerSecret: 'your_sandbox_consumer_secret',
      callbackUrl: 'https://your-app.com/payment-callback',
      enableDebugLogging: true,
    );
@@ -69,17 +69,8 @@ This is a complete Flutter example application demonstrating how to use the ugpa
 
 ### 3. Complete Payment
 
-When a payment is pending, you have two options:
-
-#### Option A: Open in Browser
-
-- Click "Open Payment in Browser"
-- This opens the PesaPal payment page in your device's default browser
-
-#### Option B: Open in WebView
-
-- Click "Open Payment in WebView"
-- This opens the payment page within the app using a WebView
+When a payment is pending, the app will automatically open the PesaPal
+redirect URL inside a WebView so the customer can complete the payment.
 
 ### 4. Check Payment Status
 
@@ -94,8 +85,8 @@ When a payment is pending, you have two options:
 
 ```dart
 final config = PaymentConfig.pesaPalSandbox(
-  apiKey: 'your_sandbox_token',
-  apiSecret: 'your_sandbox_secret',
+  consumerKey: 'your_sandbox_consumer_key',
+  consumerSecret: 'your_sandbox_consumer_secret',
   // Uses: https://cybqa.pesapal.com/pesapalv3
 );
 ```
@@ -104,8 +95,8 @@ final config = PaymentConfig.pesaPalSandbox(
 
 ```dart
 final config = PaymentConfig.pesaPalProduction(
-  apiKey: 'your_production_token',
-  apiSecret: 'your_production_secret',
+  consumerKey: 'your_production_consumer_key',
+  consumerSecret: 'your_production_consumer_secret',
   // Uses: https://pay.pesapal.com/v3
 );
 ```
@@ -116,8 +107,8 @@ For better security, consider using environment variables:
 
 ```dart
 final config = PaymentConfig.pesaPalSandbox(
-  apiKey: const String.fromEnvironment('PESAPAL_API_KEY'),
-  apiSecret: const String.fromEnvironment('PESAPAL_API_SECRET'),
+  consumerKey: const String.fromEnvironment('PESAPAL_API_KEY'),
+  consumerSecret: const String.fromEnvironment('PESAPAL_API_SECRET'),
   callbackUrl: const String.fromEnvironment('PESAPAL_CALLBACK_URL'),
 );
 ```
@@ -156,7 +147,6 @@ The app includes comprehensive error handling:
 ## Dependencies
 
 - `ugpayments`: The main payment package
-- `url_launcher`: For opening payment URLs in browser
 - `webview_flutter`: For in-app payment completion
 - `shared_preferences`: For local storage of payment history
 

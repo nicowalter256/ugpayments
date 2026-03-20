@@ -34,7 +34,6 @@ final config = PaymentConfig.pesaPalSandbox(
   consumerKey: 'your_pesapal_consumer_key',
   consumerSecret: 'your_consumer_secret',
   callbackUrl: 'https://your-app.com/payment-callback',
-  notificationId: 'your_notification_id',
 );
 
 // Create a payment client
@@ -267,7 +266,6 @@ final config = PaymentConfig.pesaPalSandbox(
   consumerKey: 'your_consumer_key',
   consumerSecret: 'your_consumer_secret',
   callbackUrl: 'https://your-app.com/callback',
-  notificationId: 'your_notification_id',
 );
 
 // Production environment
@@ -275,7 +273,6 @@ final config = PaymentConfig.pesaPalProduction(
   consumerKey: 'your_production_consumer_key',
   consumerSecret: 'your_production_consumer_secret',
   callbackUrl: 'https://your-app.com/callback',
-  notificationId: 'your_notification_id',
 );
 ```
 
