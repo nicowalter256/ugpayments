@@ -22,6 +22,21 @@ dependencies:
   ugpayments: ^0.0.1
 ```
 
+## Before you start (PesaPal keys)
+Before using the PesaPal parts of this package, you need your Pesapal credentials from your Pesapal account:
+
+1. Go to the [Pesapal website](https://www.pesapal.com/) and create/register your merchant account.
+2. In your Pesapal dashboard/developer settings, obtain your API credentials:
+   - `consumer_key` (your "Consumer Key")
+   - `consumer_secret` (your "Consumer Secret")
+3. Make sure you use the correct credentials for the environment:
+   - `PaymentConfig.pesaPalSandbox` -> your *sandbox* `consumer_key`/`consumer_secret`
+   - `PaymentConfig.pesaPalProduction` -> your *production* `consumer_key`/`consumer_secret`
+4. Set `callbackUrl` to the URL that Pesapal will call after payment. This endpoint should be publicly reachable.
+
+Notes:
+- Keep `consumer_key` and `consumer_secret` out of source control (use environment variables or your application's secrets management in real projects).
+
 ## Usage
 
 ### Basic Setup with PesaPal
@@ -31,6 +46,7 @@ import 'package:ugpayments/ugpayments.dart';
 
 // Create a PesaPal payment configuration
 final config = PaymentConfig.pesaPalSandbox(
+  // Copy these from your Pesapal dashboard ("Consumer Key" / "Consumer Secret")
   consumerKey: 'your_pesapal_consumer_key',
   consumerSecret: 'your_consumer_secret',
   callbackUrl: 'https://your-app.com/payment-callback',
