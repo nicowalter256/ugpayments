@@ -110,31 +110,11 @@ final statusResponse = await pesapalProvider.getTransactionStatus(
 );
 ```
 
-### Mobile Money Payment (Legacy)
+### Legacy payment methods (disabled)
 
-```dart
-// Create a payment request
-final request = PaymentRequest(
-  amount: 1000.0,
-  currency: 'UGX',
-  paymentMethod: 'MOBILE_MONEY',
-  phoneNumber: '+256701234567',
-  description: 'Payment for services',
-);
+`CardPayment`, `MobileMoney`, and `BankTransfer` are disabled in this package (they throw at runtime) to avoid unsafe simulated payment processing.
 
-// Process the payment
-try {
-  final response = await client.processPayment(request);
-
-  if (response.isSuccessful) {
-    print('Payment successful: ${response.transactionId}');
-  } else {
-    print('Payment failed: ${response.message}');
-  }
-} catch (e) {
-  print('Payment error: $e');
-}
-```
+Use the PesaPal flow (`redirect_url` in a WebView) for card and mobile-money options.
 
 ### Validation
 
@@ -153,9 +133,10 @@ if (PaymentValidator.isValidEmail('user@example.com')) {
 ### Encryption
 
 ```dart
-// Encrypt sensitive data
-final encrypted = Encryption.encrypt('sensitive_data');
-final decrypted = Encryption.decrypt(encrypted);
+// Encrypt sensitive data (requires an external AES-256 key)
+final aesKey = Encryption.generateAes256Key();
+final encrypted = Encryption.encrypt('sensitive_data', key: aesKey);
+final decrypted = Encryption.decrypt(encrypted, key: aesKey);
 
 // Mask sensitive data for display
 final maskedCard = Encryption.maskCardNumber('4111111111111111');
@@ -172,12 +153,7 @@ final maskedPhone = Encryption.maskPhoneNumber('+256701234567');
 - Callback notifications
 
 Note: Card payments are handled inside Pesapal's checkout page that you open using the `redirect_url` in a WebView.
-
-### Mobile Money
-
-- MTN Mobile Money
-- Airtel Money
-- M-Pesa
+Mobile money options are also selected inside the same Pesapal checkout page.
 
 ## Supported Currencies
 

@@ -62,6 +62,43 @@ class PaymentConfig {
     );
   }
 
+  /// Creates a PaymentConfig for PesaPal sandbox where credentials are loaded
+  /// from secure storage by [TokenManager].
+  ///
+  /// Security: this avoids passing `consumerKey/consumerSecret` values through
+  /// Dart objects. Provide only the secure storage *keys*.
+  factory PaymentConfig.pesaPalSandboxFromSecureStorage({
+    required String consumerKeyStorageKey,
+    required String consumerSecretStorageKey,
+    String baseUrl = 'https://cybqa.pesapal.com/pesapalv3',
+    int timeoutSeconds = 30,
+    String? callbackUrl,
+    String? notificationId,
+    String? ipnUrl,
+    String ipnNotificationType = 'GET',
+    bool enableDebugLogging = true,
+  }) {
+    final effectiveIpnUrl = ipnUrl ?? callbackUrl;
+    return PaymentConfig(
+      consumerKey: '',
+      consumerSecret: '',
+      baseUrl: baseUrl,
+      environment: 'sandbox',
+      timeoutSeconds: timeoutSeconds,
+      enableDebugLogging: enableDebugLogging,
+      additionalConfig: {
+        if (callbackUrl != null) 'callback_url': callbackUrl,
+        if (notificationId != null) 'notification_id': notificationId,
+        if (effectiveIpnUrl != null) 'ipn_url': effectiveIpnUrl,
+        'ipn_notification_type': ipnNotificationType,
+        'provider': 'pesapal',
+        // TokenManager lookup keys.
+        'pesapal_consumerKey_storageKey': consumerKeyStorageKey,
+        'pesapal_consumerSecret_storageKey': consumerSecretStorageKey,
+      },
+    );
+  }
+
   /// Creates a PaymentConfig for PesaPal production environment.
   factory PaymentConfig.pesaPalProduction({
     required String consumerKey,
@@ -88,6 +125,43 @@ class PaymentConfig {
         if (effectiveIpnUrl != null) 'ipn_url': effectiveIpnUrl,
         'ipn_notification_type': ipnNotificationType,
         'provider': 'pesapal',
+      },
+    );
+  }
+
+  /// Creates a PaymentConfig for PesaPal production where credentials are
+  /// loaded from secure storage by [TokenManager].
+  ///
+  /// Security: this avoids passing `consumerKey/consumerSecret` values through
+  /// Dart objects. Provide only the secure storage *keys*.
+  factory PaymentConfig.pesaPalProductionFromSecureStorage({
+    required String consumerKeyStorageKey,
+    required String consumerSecretStorageKey,
+    String baseUrl = 'https://pay.pesapal.com/v3',
+    int timeoutSeconds = 30,
+    String? callbackUrl,
+    String? notificationId,
+    String? ipnUrl,
+    String ipnNotificationType = 'GET',
+    bool enableDebugLogging = false,
+  }) {
+    final effectiveIpnUrl = ipnUrl ?? callbackUrl;
+    return PaymentConfig(
+      consumerKey: '',
+      consumerSecret: '',
+      baseUrl: baseUrl,
+      environment: 'production',
+      timeoutSeconds: timeoutSeconds,
+      enableDebugLogging: enableDebugLogging,
+      additionalConfig: {
+        if (callbackUrl != null) 'callback_url': callbackUrl,
+        if (notificationId != null) 'notification_id': notificationId,
+        if (effectiveIpnUrl != null) 'ipn_url': effectiveIpnUrl,
+        'ipn_notification_type': ipnNotificationType,
+        'provider': 'pesapal',
+        // TokenManager lookup keys.
+        'pesapal_consumerKey_storageKey': consumerKeyStorageKey,
+        'pesapal_consumerSecret_storageKey': consumerSecretStorageKey,
       },
     );
   }
@@ -145,9 +219,8 @@ class PaymentConfig {
 
   /// Converts the PaymentConfig to a JSON map.
   Map<String, dynamic> toJson() {
+    // Security: Never serialize credentials/secrets.
     return {
-      'consumerKey': consumerKey,
-      'consumerSecret': consumerSecret,
       'baseUrl': baseUrl,
       'environment': environment,
       'timeoutSeconds': timeoutSeconds,

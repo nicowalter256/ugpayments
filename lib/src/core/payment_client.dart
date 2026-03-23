@@ -7,6 +7,8 @@ import '../models/transaction.dart';
 import 'payment_config.dart';
 import 'payment_exception.dart';
 import 'token_manager.dart';
+import '../utils/encryption.dart';
+import 'http_client_factory.dart';
 
 /// Main client for handling payment operations in Uganda.
 class PaymentClient {
@@ -16,7 +18,7 @@ class PaymentClient {
 
   /// Creates a new PaymentClient with the given configuration.
   PaymentClient(this._config)
-    : _httpClient = HttpClient(),
+    : _httpClient = HttpClientFactory.createForConfig(_config),
       _tokenManager = TokenManager(_config);
 
   /// Processes a payment request using PesaPal API.
@@ -130,7 +132,8 @@ class PaymentClient {
       return _parsePesaPalResponse(data, request);
     } else {
       throw PaymentException(
-        'PesaPal API error: ${response.statusCode} - $responseBody',
+        'PesaPal API error: ${response.statusCode} - '
+        '${Encryption.sanitizeForLogging(responseBody)}',
       );
     }
   }
@@ -178,12 +181,12 @@ class PaymentClient {
 
   /// Generates a unique transaction ID.
   String _generateTransactionId() {
-    return 'TXN_${DateTime.now().millisecondsSinceEpoch}';
+    return 'TXN_${Encryption.generateUuidV4()}';
   }
 
   /// Generates a merchant reference.
   String _generateMerchantReference() {
-    return 'REF_${DateTime.now().millisecondsSinceEpoch}';
+    return 'REF_${Encryption.generateUuidV4()}';
   }
 
   Future<String> _resolveNotificationId(String token) async {
@@ -229,7 +232,8 @@ class PaymentClient {
 
       if (response.statusCode != 200) {
         throw PaymentException(
-          'Failed to register IPN: ${response.statusCode} - $responseBody',
+          'Failed to register IPN: ${response.statusCode} - '
+          '${Encryption.sanitizeForLogging(responseBody)}',
         );
       }
 
@@ -243,7 +247,9 @@ class PaymentClient {
 
       return ipnId;
     } catch (e) {
-      throw PaymentException('Failed to register IPN: $e');
+      throw PaymentException(
+        'Failed to register IPN: ${Encryption.sanitizeForLogging(e.toString())}',
+      );
     }
   }
 
@@ -251,5 +257,12 @@ class PaymentClient {
   void dispose() {
     _httpClient.close();
     _tokenManager.dispose();
+  }
+
+  /// Clears cached auth token (and removes it from secure storage if present).
+  ///
+  /// Use this when the user logs out or you want to force a fresh token.
+  void logout() {
+    _tokenManager.clearToken();
   }
 }

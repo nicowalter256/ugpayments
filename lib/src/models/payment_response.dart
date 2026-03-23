@@ -56,13 +56,17 @@ class PaymentResponse {
 
   /// Converts the PaymentResponse to a JSON map.
   Map<String, dynamic> toJson() {
+    final sanitizedData = data == null
+        ? null
+        : _sanitizeMapForSerialization(Map<String, dynamic>.from(data!));
+
     return {
       'transactionId': transactionId,
       'status': status.toString().split('.').last,
       'message': message,
       if (amount != null) 'amount': amount,
       if (currency != null) 'currency': currency,
-      if (data != null) 'data': data,
+      if (sanitizedData != null) 'data': sanitizedData,
       'timestamp': timestamp.toIso8601String(),
     };
   }
@@ -79,5 +83,22 @@ class PaymentResponse {
   @override
   String toString() {
     return 'PaymentResponse(transactionId: $transactionId, status: $status, message: $message)';
+  }
+
+  static Map<String, dynamic> _sanitizeMapForSerialization(
+    Map<String, dynamic> input,
+  ) {
+    // Best-effort defense-in-depth: never serialize typical sensitive card/PAN/CVV fields.
+    const sensitiveKeys = {
+      'cardNumber',
+      'cvv',
+      'expiryMonth',
+      'expiryYear',
+      'pan',
+      'cvv2',
+    };
+
+    input.removeWhere((key, _) => sensitiveKeys.contains(key));
+    return input;
   }
 }

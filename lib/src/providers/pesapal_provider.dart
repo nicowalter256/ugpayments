@@ -6,6 +6,8 @@ import '../models/payment_status.dart';
 import '../core/payment_config.dart';
 import '../core/payment_exception.dart';
 import '../core/token_manager.dart';
+import '../utils/encryption.dart';
+import '../core/http_client_factory.dart';
 
 /// PesaPal payment provider implementation.
 class PesaPalProvider {
@@ -15,7 +17,7 @@ class PesaPalProvider {
 
   /// Creates a new PesaPal provider.
   PesaPalProvider(this._config)
-    : _httpClient = HttpClient(),
+    : _httpClient = HttpClientFactory.createForConfig(_config),
       _tokenManager = TokenManager(_config);
 
   /// Submits a payment order to PesaPal.
@@ -43,11 +45,14 @@ class PesaPalProvider {
         return _parseOrderResponse(data, request);
       } else {
         throw PaymentException(
-          'PesaPal API error: ${response.statusCode} - $responseBody',
+          'PesaPal API error: ${response.statusCode} - '
+          '${Encryption.sanitizeForLogging(responseBody)}',
         );
       }
     } catch (e) {
-      throw PaymentException('Failed to submit order to PesaPal: $e');
+      throw PaymentException(
+        'Failed to submit order to PesaPal: ${Encryption.sanitizeForLogging(e.toString())}',
+      );
     }
   }
 
@@ -195,17 +200,17 @@ class PesaPalProvider {
 
   /// Generates a unique transaction ID.
   String _generateTransactionId() {
-    return 'PESAPAL_${DateTime.now().millisecondsSinceEpoch}';
+    return 'PESAPAL_${Encryption.generateUuidV4()}';
   }
 
   /// Generates a merchant reference.
   String _generateMerchantReference() {
-    return 'REF_${DateTime.now().millisecondsSinceEpoch}';
+    return 'REF_${Encryption.generateUuidV4()}';
   }
 
   /// Generates a notification ID.
   String _generateNotificationId() {
-    return 'NOTIF_${DateTime.now().millisecondsSinceEpoch}';
+    return 'NOTIF_${Encryption.generateUuidV4()}';
   }
 
   /// Disposes the HTTP client and token manager.

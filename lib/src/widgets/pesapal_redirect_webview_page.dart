@@ -26,10 +26,29 @@ class _PesaPalRedirectWebViewPageState
   String? _lastUrl;
   String? _timeoutMessage;
   Timer? _timeoutTimer;
+  bool get _hasValidInitialUrl {
+    final uri = Uri.tryParse(widget.url);
+    if (uri == null) return false;
+    final host = uri.host.toLowerCase();
+    final allowed = host == 'pesapal.com' || host.endsWith('.pesapal.com');
+    return allowed && uri.scheme == 'https';
+  }
+
+  bool _isAllowedPesapalUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+    final host = uri.host.toLowerCase();
+    return uri.scheme == 'https' && (host == 'pesapal.com' || host.endsWith('.pesapal.com'));
+  }
 
   @override
   void initState() {
     super.initState();
+    final initialAllowed = _hasValidInitialUrl;
+    if (!initialAllowed) {
+      _isLoading = false;
+      _errorDescription = 'Blocked redirect: URL is not on *.pesapal.com';
+    }
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
@@ -64,6 +83,19 @@ class _PesaPalRedirectWebViewPageState
               _errorDescription = error.description;
             });
           },
+          onNavigationRequest: (NavigationRequest request) {
+            if (!_isAllowedPesapalUrl(request.url)) {
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                  _errorDescription =
+                      'Blocked navigation to: ${request.url}';
+                });
+              }
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
           onUrlChange: (UrlChange change) {
             if (!mounted) return;
             _lastUrl = change.url;
@@ -71,9 +103,7 @@ class _PesaPalRedirectWebViewPageState
         ),
       );
 
-    // PesaPal's redirect flow often depends on cookies across domains.
-    // Android WebView defaults third-party cookies to `false`, which can
-    // cause the "complete payment" page to keep loading indefinitely.
+    // Restrict third-party cookies to reduce data leakage risks.
     try {
       final cookieManager = WebViewCookieManager();
       final platformCookieManager = cookieManager.platform;
@@ -81,13 +111,15 @@ class _PesaPalRedirectWebViewPageState
       // throw and we can safely ignore it.
       (platformCookieManager as dynamic).setAcceptThirdPartyCookies(
         _controller.platform as dynamic,
-        true,
+        false,
       );
     } catch (e) {
       debugPrint('Could not enable third-party cookies: $e');
     }
 
-    _controller.loadRequest(Uri.parse(widget.url));
+    if (initialAllowed) {
+      _controller.loadRequest(Uri.parse(widget.url));
+    }
 
     _timeoutTimer = Timer(const Duration(seconds: 25), () {
       if (!mounted) return;

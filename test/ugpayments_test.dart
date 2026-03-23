@@ -400,8 +400,9 @@ void main() {
     test('should encrypt and decrypt data', () {
       const originalData = 'sensitive payment data';
 
-      final encrypted = Encryption.encrypt(originalData);
-      final decrypted = Encryption.decrypt(encrypted);
+      final key = Encryption.generateAes256Key();
+      final encrypted = Encryption.encrypt(originalData, key: key);
+      final decrypted = Encryption.decrypt(encrypted, key: key);
 
       expect(decrypted, equals(originalData));
     });

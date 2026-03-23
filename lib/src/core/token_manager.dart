@@ -1,27 +1,60 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:developer';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'payment_config.dart';
 import 'payment_exception.dart';
+import 'http_client_factory.dart';
+import '../utils/encryption.dart';
 
 /// Manages authentication tokens for PesaPal API.
 class TokenManager {
   final PaymentConfig _config;
   final HttpClient _httpClient;
+  final FlutterSecureStorage _secureStorage;
 
   String? _cachedToken;
   DateTime? _tokenExpiry;
 
+  static const Duration _expiryRefreshBuffer = Duration(seconds: 60);
+
+  String get _tokenStorageKey =>
+      'ugpayments.pesapal.token.${_config.environment}';
+
+  String get _tokenExpiryStorageKey =>
+      'ugpayments.pesapal.tokenExpiry.${_config.environment}';
+
   /// Creates a new TokenManager.
-  TokenManager(this._config) : _httpClient = HttpClient();
+  TokenManager(this._config)
+      : _httpClient = HttpClientFactory.createForConfig(_config),
+        _secureStorage = const FlutterSecureStorage();
 
   /// Gets a valid authentication token, fetching a new one if necessary.
   Future<String> getToken() async {
-    // Check if we have a valid cached token
+    final now = DateTime.now();
+
+    // Check if we have a valid cached token (refresh early).
     if (_cachedToken != null &&
         _tokenExpiry != null &&
-        DateTime.now().isBefore(_tokenExpiry!)) {
+        now.isBefore(_tokenExpiry!.subtract(_expiryRefreshBuffer))) {
       return _cachedToken!;
+    }
+
+    // Try to restore from secure storage.
+    final storedToken = await _secureStorage.read(key: _tokenStorageKey);
+    final storedExpiry = await _secureStorage.read(
+      key: _tokenExpiryStorageKey,
+    );
+
+    if (storedToken != null && storedExpiry != null) {
+      final expiry = DateTime.tryParse(storedExpiry);
+      if (expiry != null &&
+          now.isBefore(expiry.subtract(_expiryRefreshBuffer))) {
+        _cachedToken = storedToken;
+        _tokenExpiry = expiry;
+        return storedToken;
+      }
     }
 
     // Fetch a new token
@@ -33,9 +66,12 @@ class TokenManager {
     try {
       final url = _config.pesaPalAuthRequestTokenUri;
 
+      final consumerKey = await _resolveConsumerKey();
+      final consumerSecret = await _resolveConsumerSecret();
+
       final requestBody = {
-        'consumer_key': _config.consumerKey,
-        'consumer_secret': _config.consumerSecret,
+        'consumer_key': consumerKey,
+        'consumer_secret': consumerSecret,
       };
 
       final httpRequest = await _httpClient.postUrl(url);
@@ -78,14 +114,30 @@ class TokenManager {
           log('PesaPal: Successfully fetched new authentication token');
         }
 
+        // Persist token for reuse across app restarts.
+        await _secureStorage.write(
+          key: _tokenStorageKey,
+          value: _cachedToken,
+        );
+        if (_tokenExpiry != null) {
+          await _secureStorage.write(
+            key: _tokenExpiryStorageKey,
+            value: _tokenExpiry!.toIso8601String(),
+          );
+        }
+
         return token;
       } else {
         throw PaymentException(
-          'Failed to fetch token: ${response.statusCode} - $responseBody',
+          'Failed to fetch token: ${response.statusCode} - '
+          '${Encryption.sanitizeForLogging(responseBody)}',
         );
       }
     } catch (e) {
-      throw PaymentException('Failed to fetch authentication token: $e');
+      throw PaymentException(
+        'Failed to fetch authentication token: '
+        '${Encryption.sanitizeForLogging(e.toString())}',
+      );
     }
   }
 
@@ -93,6 +145,37 @@ class TokenManager {
   void clearToken() {
     _cachedToken = null;
     _tokenExpiry = null;
+    unawaited(_secureStorage.delete(key: _tokenStorageKey));
+    unawaited(_secureStorage.delete(key: _tokenExpiryStorageKey));
+  }
+
+  Future<String> _resolveConsumerKey() async {
+    final storageKey =
+        _config.additionalConfig?['pesapal_consumerKey_storageKey']?.toString();
+
+    if (storageKey != null && storageKey.trim().isNotEmpty) {
+      final v = await _secureStorage.read(key: storageKey);
+      if (v != null && v.trim().isNotEmpty) {
+        return v;
+      }
+    }
+
+    // Backwards compatible fallback.
+    return _config.consumerKey;
+  }
+
+  Future<String> _resolveConsumerSecret() async {
+    final storageKey = _config.additionalConfig?['pesapal_consumerSecret_storageKey']?.toString();
+
+    if (storageKey != null && storageKey.trim().isNotEmpty) {
+      final v = await _secureStorage.read(key: storageKey);
+      if (v != null && v.trim().isNotEmpty) {
+        return v;
+      }
+    }
+
+    // Backwards compatible fallback.
+    return _config.consumerSecret;
   }
 
   /// Disposes the HTTP client.

@@ -6,6 +6,7 @@ export 'src/core/token_manager.dart';
 
 // Models
 export 'src/models/payment_request.dart';
+export 'src/models/card_details.dart';
 export 'src/models/payment_response.dart';
 export 'src/models/payment_status.dart';
 export 'src/models/transaction.dart';
