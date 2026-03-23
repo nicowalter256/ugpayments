@@ -356,6 +356,8 @@ flutter test
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+If you need help (or you find a bug), please open an issue on GitHub: https://github.com/nicowalter256/ugpayments/issues
+
 ### License
 
 This package is licensed under the MIT License. See the LICENSE file for details.
