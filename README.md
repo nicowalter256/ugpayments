@@ -1,12 +1,12 @@
 # ugpayments
 
-A comprehensive Flutter package for processing payments in Uganda, supporting multiple payment methods including PesaPal integration, mobile money, bank transfers, and card payments.
+A comprehensive Flutter package for processing payments in Uganda, supporting PesaPal integration (including card options via redirect flow) and mobile money.
 
 ## Features
 
 - **PesaPal Integration**: Full integration with PesaPal payment gateway
-- **Multiple Payment Methods**: Support for mobile money (MTN, Airtel, M-Pesa), bank transfers, and card payments
-- **Comprehensive Validation**: Built-in validation for payment data, phone numbers, card numbers, and more
+- **Multiple Payment Methods**: Support for mobile money (MTN, Airtel, M-Pesa) and PesaPal (including card options via redirect flow)
+- **Comprehensive Validation**: Built-in validation for payment data, phone numbers, and more
 - **Security**: Encryption utilities for sensitive payment data
 - **Error Handling**: Robust exception handling with detailed error messages
 - **JSON Serialization**: Full support for JSON serialization/deserialization
@@ -84,7 +84,9 @@ try {
     print('Payment successful: ${response.transactionId}');
   } else if (response.isPending) {
     print('Payment pending. Redirect to: ${response.data?['redirect_url']}');
-    // Open the redirect URL in a WebView or browser
+    // Open the Pesapal redirect URL in your WebView.
+    // Inside the Pesapal checkout page, the customer can choose a payment method (including cards).
+    // You do NOT need to make a separate "card payment" request before showing this page.
   } else {
     print('Payment failed: ${response.message}');
   }
@@ -134,51 +136,12 @@ try {
 }
 ```
 
-### Card Payment
-
-```dart
-final request = PaymentRequest(
-  amount: 5000.0,
-  currency: 'UGX',
-  paymentMethod: 'CARD_PAYMENT',
-  metadata: {
-    'cardNumber': '4111111111111111',
-    'expiryMonth': '12',
-    'expiryYear': '2025',
-    'cvv': '123',
-  },
-);
-
-final response = await client.processPayment(request);
-```
-
-### Bank Transfer
-
-```dart
-final request = PaymentRequest(
-  amount: 10000.0,
-  currency: 'UGX',
-  paymentMethod: 'BANK_TRANSFER',
-  metadata: {
-    'bankName': 'STANBIC_BANK',
-    'accountNumber': '1234567890',
-  },
-);
-
-final response = await client.processPayment(request);
-```
-
 ### Validation
 
 ```dart
 // Validate phone numbers
 if (PaymentValidator.isValidUgandanPhoneNumber('+256701234567')) {
   print('Valid phone number');
-}
-
-// Validate card numbers
-if (PaymentValidator.isValidCardNumber('4111111111111111')) {
-  print('Valid card number');
 }
 
 // Validate email addresses
@@ -208,26 +171,13 @@ final maskedPhone = Encryption.maskPhoneNumber('+256701234567');
 - Redirect URL handling
 - Callback notifications
 
+Note: Card payments are handled inside Pesapal's checkout page that you open using the `redirect_url` in a WebView.
+
 ### Mobile Money
 
 - MTN Mobile Money
 - Airtel Money
 - M-Pesa
-
-### Bank Transfers
-
-- Stanbic Bank
-- Centenary Bank
-- DFCU Bank
-- Barclays Bank
-- Standard Chartered
-- Bank of Africa
-
-### Card Payments
-
-- Visa
-- Mastercard
-- American Express
 
 ## Supported Currencies
 
@@ -292,24 +242,6 @@ final config = PaymentConfig.pesaPalProduction(
 );
 ```
 
-### API Endpoints
-
-The package integrates with the following PesaPal API endpoints:
-
-**Sandbox Environment:**
-
-- Base URL: `https://cybqa.pesapal.com/pesapalv3`
-- `POST /api/Auth/RequestToken` - Get authentication token
-- `POST /api/Transactions/SubmitOrderRequest` - Submit payment order
-- `GET /api/Transactions/GetTransactionStatus` - Get transaction status
-
-**Production Environment:**
-
-- Base URL: `https://pay.pesapal.com/v3`
-- `POST /api/Auth/RequestToken` - Get authentication token
-- `POST /api/Transactions/SubmitOrderRequest` - Submit payment order
-- `GET /api/Transactions/GetTransactionStatus` - Get transaction status
-
 ### Response Handling
 
 ```dart
@@ -318,7 +250,9 @@ final response = await client.processPayment(request);
 // Check if payment is pending (requires redirect)
 if (response.isPending) {
   final redirectUrl = response.data?['redirect_url'];
-  // Open redirectUrl in WebView or browser
+  // Open redirectUrl in your WebView.
+  // The Pesapal checkout page will handle the customer flow (including card options),
+  // so you do not initiate a separate "card payment" request.
 }
 
 // Check transaction status later
