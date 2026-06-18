@@ -1,3 +1,13 @@
+## 0.1.4
+
+- Fixes:
+  - `PesaPalProvider.submitOrder` no longer fabricates a local `notification_id`; it now registers an IPN with PesaPal (matching `PaymentClient`) when one isn't configured
+  - `PaymentClient.getTransaction` no longer always returns `null`; it now delegates to `PesaPalProvider` and returns a populated `Transaction`
+  - `PaymentClient` and `PesaPalProvider` no longer duplicate PesaPal order logic; `PaymentClient` delegates to `PesaPalProvider`
+  - Unified sensitive-key redaction between `PaymentRequest`/`PaymentResponse` serialization (was missing `pan`/`cvv2` in one of the two)
+  - `PaymentConstants.supportedPaymentMethods` now includes `PESAPAL`
+  - `PaymentClient` now validates currency and payment method against `PaymentValidator`
+
 ## 0.1.3
 
 - SECURITY (BREAKING/behavioral):
@@ -10,13 +20,6 @@
   - Disable legacy simulated `CardPayment`, `MobileMoney`, and `BankTransfer` processors (runtime disabled)
   - Prevent credential leakage by removing secrets from `PaymentConfig.toJson()` and sanitizing `PaymentResponse.toJson()`
   - Replace timestamp-based IDs with UUID v4
-- Fixes:
-  - `PesaPalProvider.submitOrder` no longer fabricates a local `notification_id`; it now registers an IPN with PesaPal (matching `PaymentClient`) when one isn't configured
-  - `PaymentClient.getTransaction` no longer always returns `null`; it now delegates to `PesaPalProvider` and returns a populated `Transaction`
-  - `PaymentClient` and `PesaPalProvider` no longer duplicate PesaPal order logic; `PaymentClient` delegates to `PesaPalProvider`
-  - Unified sensitive-key redaction between `PaymentRequest`/`PaymentResponse` serialization (was missing `pan`/`cvv2` in one of the two)
-  - `PaymentConstants.supportedPaymentMethods` now includes `PESAPAL`
-  - `PaymentClient` now validates currency and payment method against `PaymentValidator`
 
 ## 0.1.2
 
