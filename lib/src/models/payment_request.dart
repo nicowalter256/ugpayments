@@ -1,3 +1,4 @@
+import '../utils/encryption.dart';
 import 'card_details.dart';
 
 /// Represents a payment request with all necessary details.
@@ -42,8 +43,8 @@ class PaymentRequest {
     Map<String, dynamic>? metadata,
   }) : metadata = metadata == null
             ? null
-            : _sanitizeMetadataForStorage(Map<String, dynamic>.from(metadata));
-  
+            : Encryption.redactSensitiveKeys(Map<String, dynamic>.from(metadata));
+
 
   /// Creates a PaymentRequest from a JSON map.
   factory PaymentRequest.fromJson(Map<String, dynamic> json) {
@@ -84,28 +85,5 @@ class PaymentRequest {
   @override
   String toString() {
     return 'PaymentRequest(amount: $amount, currency: $currency, paymentMethod: $paymentMethod)';
-  }
-
-  static Map<String, dynamic> _sanitizeMetadataForSerialization(
-    Map<String, dynamic> input,
-  ) {
-    // Remove common sensitive card fields if they were provided through the legacy metadata map.
-    // This is a best-effort defense; callers should use the strongly-typed `cardDetails` field instead.
-    const sensitiveKeys = {
-      'cardNumber',
-      'cvv',
-      'expiryMonth',
-      'expiryYear',
-    };
-
-    input.removeWhere((key, _) => sensitiveKeys.contains(key));
-    return input;
-  }
-
-  static Map<String, dynamic> _sanitizeMetadataForStorage(
-    Map<String, dynamic> input,
-  ) {
-    // Remove sensitive card fields early so they are never stored in this object.
-    return _sanitizeMetadataForSerialization(input);
   }
 }

@@ -14,6 +14,7 @@ class PaymentConstants {
 
   /// Supported payment methods
   static const List<String> supportedPaymentMethods = [
+    'PESAPAL',
     'MOBILE_MONEY',
     'BANK_TRANSFER',
     'CARD_PAYMENT',

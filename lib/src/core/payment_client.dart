@@ -1,25 +1,20 @@
-import 'dart:convert';
-import 'dart:io';
 import '../models/payment_request.dart';
 import '../models/payment_response.dart';
-import '../models/payment_status.dart';
 import '../models/transaction.dart';
+import '../providers/pesapal_provider.dart';
+import '../utils/payment_validator.dart';
 import 'payment_config.dart';
 import 'payment_exception.dart';
-import 'token_manager.dart';
-import '../utils/encryption.dart';
-import 'http_client_factory.dart';
 
 /// Main client for handling payment operations in Uganda.
+///
+/// Delegates the actual PesaPal order submission and status lookups to
+/// [PesaPalProvider] so there is a single implementation of that logic.
 class PaymentClient {
-  final PaymentConfig _config;
-  final HttpClient _httpClient;
-  final TokenManager _tokenManager;
+  final PesaPalProvider _provider;
 
   /// Creates a new PaymentClient with the given configuration.
-  PaymentClient(this._config)
-    : _httpClient = HttpClientFactory.createForConfig(_config),
-      _tokenManager = TokenManager(_config);
+  PaymentClient(PaymentConfig config) : _provider = PesaPalProvider(config);
 
   /// Processes a payment request using PesaPal API.
   ///
@@ -27,45 +22,14 @@ class PaymentClient {
   ///
   /// Throws [PaymentException] if the payment fails.
   Future<PaymentResponse> processPayment(PaymentRequest request) async {
-    try {
-      // Validate the payment request
-      _validateRequest(request);
-
-      // Process the payment using PesaPal API
-      final response = await _submitOrderToPesaPal(request);
-
-      return response;
-    } catch (e) {
-      throw PaymentException('Payment processing failed: $e');
-    }
+    _validateRequest(request);
+    return _provider.submitOrder(request);
   }
 
-  /// Retrieves transaction details by transaction ID.
+  /// Retrieves transaction details by transaction ID (PesaPal order tracking ID).
   Future<Transaction?> getTransaction(String transactionId) async {
-    try {
-      // Get authentication token
-      final token = await _tokenManager.getToken();
-
-      final url = _config.pesaPalGetTransactionStatusUri(transactionId);
-
-      final request = await _httpClient.getUrl(url);
-      request.headers.set('Authorization', 'Bearer $token');
-      request.headers.set('Content-Type', 'application/json');
-
-      final response = await request.close();
-      final responseBody = await response.transform(utf8.decoder).join();
-
-      if (response.statusCode == 200) {
-        final data = json.decode(responseBody) as Map<String, dynamic>;
-        return _parseTransactionFromPesaPal(data);
-      } else {
-        throw PaymentException(
-          'Failed to retrieve transaction: ${response.statusCode}',
-        );
-      }
-    } catch (e) {
-      throw PaymentException('Failed to retrieve transaction: $e');
-    }
+    final response = await _provider.getTransactionStatus(transactionId);
+    return _toTransaction(response);
   }
 
   /// Validates a payment request.
@@ -78,191 +42,45 @@ class PaymentClient {
       throw PaymentException('Currency is required');
     }
 
+    if (!PaymentValidator.isValidCurrency(request.currency)) {
+      throw PaymentException('Unsupported currency: ${request.currency}');
+    }
+
     if (request.paymentMethod.isEmpty) {
       throw PaymentException('Payment method is required');
     }
-  }
 
-  /// Submits an order to PesaPal API.
-  Future<PaymentResponse> _submitOrderToPesaPal(PaymentRequest request) async {
-    final url = _config.pesaPalSubmitOrderRequestUri;
-
-    // Get authentication token
-    final token = await _tokenManager.getToken();
-
-    // Ensure we have a valid `notification_id` by registering an IPN URL
-    // when it isn't provided by the consumer of the package.
-    final notificationId = await _resolveNotificationId(token);
-
-    final requestBody = {
-      'id': request.merchantReference ?? _generateMerchantReference(),
-      'currency': request.currency,
-      'amount': request.amount,
-      'description': request.description ?? 'Payment via ugpayments',
-      'callback_url':
-          _config.additionalConfig?['callback_url'] ??
-          'https://www.myapplication.com/response-page',
-      'notification_id': notificationId,
-      'billing_address': {
-        'email_address': request.email ?? '',
-        'phone_number': request.phoneNumber ?? '',
-        'country_code': 'UG',
-        'first_name': request.metadata?['first_name'] ?? '',
-        'middle_name': request.metadata?['middle_name'] ?? '',
-        'last_name': request.metadata?['last_name'] ?? '',
-        'line_1': request.metadata?['line_1'] ?? '',
-        'line_2': request.metadata?['line_2'] ?? '',
-        'city': request.metadata?['city'] ?? '',
-        'state': request.metadata?['state'] ?? '',
-        'postal_code': request.metadata?['postal_code'] ?? '',
-        'zip_code': request.metadata?['zip_code'] ?? '',
-      },
-    };
-
-    final httpRequest = await _httpClient.postUrl(url);
-    httpRequest.headers.set('Authorization', 'Bearer $token');
-    httpRequest.headers.set('Content-Type', 'application/json');
-    httpRequest.write(json.encode(requestBody));
-
-    final response = await httpRequest.close();
-    final responseBody = await response.transform(utf8.decoder).join();
-
-    if (response.statusCode == 200) {
-      final data = json.decode(responseBody) as Map<String, dynamic>;
-      return _parsePesaPalResponse(data, request);
-    } else {
+    if (!PaymentValidator.isValidPaymentMethod(request.paymentMethod)) {
       throw PaymentException(
-        'PesaPal API error: ${response.statusCode} - '
-        '${Encryption.sanitizeForLogging(responseBody)}',
+        'Unsupported payment method: ${request.paymentMethod}',
       );
     }
   }
 
-  /// Parses PesaPal API response into PaymentResponse.
-  PaymentResponse _parsePesaPalResponse(
-    Map<String, dynamic> data,
-    PaymentRequest originalRequest,
-  ) {
-    final orderTrackingId = data['order_tracking_id'] as String?;
-    final merchantReference = data['merchant_reference'] as String?;
-    final redirectUrl = data['redirect_url'] as String?;
-    final error = data['error'];
-    final status = data['status'] as String?;
-
-    if (error != null) {
-      throw PaymentException('PesaPal error: $error');
-    }
-
-    if (status != '200') {
-      throw PaymentException('PesaPal API returned status: $status');
-    }
-
-    return PaymentResponse(
-      transactionId: orderTrackingId ?? _generateTransactionId(),
-      status: PaymentStatus.pending,
-      message: 'Payment submitted successfully. Redirect to complete payment.',
-      amount: originalRequest.amount,
-      currency: originalRequest.currency,
-      timestamp: DateTime.now(),
-      data: {
-        'merchant_reference': merchantReference,
-        'redirect_url': redirectUrl,
-        'pesapal_status': status,
-      },
+  /// Maps a PesaPal status-check [PaymentResponse] into a [Transaction].
+  Transaction _toTransaction(PaymentResponse response) {
+    final data = response.data ?? const <String, dynamic>{};
+    return Transaction(
+      id: response.transactionId,
+      amount: response.amount ?? 0.0,
+      currency: response.currency ?? '',
+      paymentMethod: data['payment_method']?.toString() ?? '',
+      status: response.status,
+      merchantReference: data['merchant_reference']?.toString(),
+      createdAt: response.timestamp,
+      updatedAt: response.timestamp,
     );
-  }
-
-  /// Parses PesaPal transaction data into Transaction model.
-  Transaction? _parseTransactionFromPesaPal(Map<String, dynamic> data) {
-    // This would parse the actual PesaPal transaction response
-    // Implementation depends on the actual response format
-    return null;
-  }
-
-  /// Generates a unique transaction ID.
-  String _generateTransactionId() {
-    return 'TXN_${Encryption.generateUuidV4()}';
-  }
-
-  /// Generates a merchant reference.
-  String _generateMerchantReference() {
-    return 'REF_${Encryption.generateUuidV4()}';
-  }
-
-  Future<String> _resolveNotificationId(String token) async {
-    final existing = _config.notificationId;
-    if (existing != null && existing.trim().isNotEmpty) {
-      return existing;
-    }
-
-    final ipnUrl = _config.ipnUrl;
-    if (ipnUrl == null || ipnUrl.trim().isEmpty) {
-      throw PaymentException(
-        'Missing IPN URL. Provide callbackUrl (used as IPN url by default) or set ipnUrl in PaymentConfig.',
-      );
-    }
-
-    return _registerIpnAndReturnId(
-      token: token,
-      ipnUrl: ipnUrl,
-      ipnNotificationType: _config.ipnNotificationType,
-    );
-  }
-
-  Future<String> _registerIpnAndReturnId({
-    required String token,
-    required String ipnUrl,
-    required String ipnNotificationType,
-  }) async {
-    try {
-      final httpRequest = await _httpClient.postUrl(_config.pesaPalRegisterIpnUri);
-      httpRequest.headers.set('Authorization', 'Bearer $token');
-      httpRequest.headers.set('Accept', 'application/json');
-      httpRequest.headers.set('Content-Type', 'application/json');
-
-      httpRequest.write(
-        json.encode({
-          'url': ipnUrl,
-          'ipn_notification_type': ipnNotificationType,
-        }),
-      );
-
-      final response = await httpRequest.close();
-      final responseBody = await response.transform(utf8.decoder).join();
-
-      if (response.statusCode != 200) {
-        throw PaymentException(
-          'Failed to register IPN: ${response.statusCode} - '
-          '${Encryption.sanitizeForLogging(responseBody)}',
-        );
-      }
-
-      final data = json.decode(responseBody) as Map<String, dynamic>;
-      final ipnId = data['ipn_id'] as String?;
-      if (ipnId == null || ipnId.trim().isEmpty) {
-        throw PaymentException(
-          'IPN registration succeeded but ipn_id was missing. Response: $data',
-        );
-      }
-
-      return ipnId;
-    } catch (e) {
-      throw PaymentException(
-        'Failed to register IPN: ${Encryption.sanitizeForLogging(e.toString())}',
-      );
-    }
   }
 
   /// Disposes the HTTP client and token manager.
   void dispose() {
-    _httpClient.close();
-    _tokenManager.dispose();
+    _provider.dispose();
   }
 
   /// Clears cached auth token (and removes it from secure storage if present).
   ///
   /// Use this when the user logs out or you want to force a fresh token.
   void logout() {
-    _tokenManager.clearToken();
+    _provider.clearToken();
   }
 }

@@ -189,6 +189,28 @@ class Encryption {
     return diff == 0;
   }
 
+  /// Common sensitive card/PAN field names that should never be serialized.
+  static const Set<String> sensitiveDataKeys = {
+    'cardNumber',
+    'cvv',
+    'cvv2',
+    'pan',
+    'expiryMonth',
+    'expiryYear',
+  };
+
+  /// Removes [sensitiveDataKeys] from [input].
+  ///
+  /// Used as a best-effort defense-in-depth measure when serializing
+  /// request/response maps that may contain legacy card fields.
+  static Map<String, dynamic> redactSensitiveKeys(
+    Map<String, dynamic> input,
+  ) {
+    final result = Map<String, dynamic>.from(input);
+    result.removeWhere((key, _) => sensitiveDataKeys.contains(key));
+    return result;
+  }
+
   /// Sanitizes sensitive data for logging (removes sensitive information).
   static String sanitizeForLogging(
     String data, {

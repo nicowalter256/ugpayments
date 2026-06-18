@@ -1,3 +1,23 @@
+## 0.1.3
+
+- SECURITY (BREAKING/behavioral):
+  - Replace insecure XOR encryption with AES-256-GCM (authenticated encryption) using external keys
+  - Replace custom hashing with SHA-256 + constant-time comparisons
+  - Add TLS certificate pinning (fail-closed in production) via HttpClient factory
+  - Harden PesaPal WebView with `https://*.pesapal.com` allowlisting and safer redirect handling
+  - Store PesaPal tokens securely using `flutter_secure_storage` with early refresh
+  - Add PCI-aware `CardDetails` model (CVV not stored/serialized) and sanitize legacy card fields
+  - Disable legacy simulated `CardPayment`, `MobileMoney`, and `BankTransfer` processors (runtime disabled)
+  - Prevent credential leakage by removing secrets from `PaymentConfig.toJson()` and sanitizing `PaymentResponse.toJson()`
+  - Replace timestamp-based IDs with UUID v4
+- Fixes:
+  - `PesaPalProvider.submitOrder` no longer fabricates a local `notification_id`; it now registers an IPN with PesaPal (matching `PaymentClient`) when one isn't configured
+  - `PaymentClient.getTransaction` no longer always returns `null`; it now delegates to `PesaPalProvider` and returns a populated `Transaction`
+  - `PaymentClient` and `PesaPalProvider` no longer duplicate PesaPal order logic; `PaymentClient` delegates to `PesaPalProvider`
+  - Unified sensitive-key redaction between `PaymentRequest`/`PaymentResponse` serialization (was missing `pan`/`cvv2` in one of the two)
+  - `PaymentConstants.supportedPaymentMethods` now includes `PESAPAL`
+  - `PaymentClient` now validates currency and payment method against `PaymentValidator`
+
 ## 0.1.2
 
 - Docs: sync READMEs with the latest PesaPal flow (consumerKey/consumerSecret
