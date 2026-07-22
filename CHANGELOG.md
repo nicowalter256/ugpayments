@@ -1,3 +1,31 @@
+## 0.2.0
+
+- BREAKING: `PaymentException` is now a `sealed` class hierarchy instead of a
+  single concrete class. Catching `PaymentException` still catches every
+  case, but code that constructed it directly (`PaymentException('...')`)
+  must switch to one of the typed factories/subtypes: `PaymentException.invalidData`,
+  `.authenticationFailed`, `.networkError`, `.insufficientFunds`, `.timeout`,
+  `.validation` (request-validation failures), or `.api` (arbitrary PesaPal
+  API/transport failures). This also lets calling code exhaustively `switch`
+  over the concrete exception subtypes.
+- Fixes:
+  - `PesaPalProvider`/`TokenManager` catch-alls no longer re-wrap an
+    already-thrown `PaymentException`, so `code`/`details`/`originalException`
+    now survive instead of being lost behind a generic wrapper message
+  - `PesaPalProvider.getTransactionStatus`'s catch-all now sanitizes the
+    caught error before interpolating it into the exception message, matching
+    the rest of the file
+- Hardening: public data models and service classes (`PaymentClient`,
+  `PaymentConfig`, `TokenManager`, `PesaPalProvider`, `PaymentRequest`,
+  `PaymentResponse`, `Transaction`, `CardDetails`, `PaymentValidator`,
+  `Encryption`, `HttpClientFactory`, `PaymentConstants`,
+  `PesaPalRedirectWebViewPage`, and the deprecated legacy processors) are now
+  declared `final class` so they can't be extended/implemented outside this
+  package, protecting constructor-time invariants like metadata redaction
+- Example app now completes checkout using the package's hardened
+  `PesaPalRedirectWebViewPage` (with `*.pesapal.com` allowlisting) instead of
+  its own unrestricted WebView
+
 ## 0.1.4
 
 - Fixes:

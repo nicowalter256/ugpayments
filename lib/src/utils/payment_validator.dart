@@ -1,5 +1,5 @@
 /// Utility class for validating payment-related data.
-class PaymentValidator {
+final class PaymentValidator {
   /// Validates an email address format.
   static bool isValidEmail(String email) {
     final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');

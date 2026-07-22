@@ -2,7 +2,7 @@ import '../utils/encryption.dart';
 import 'card_details.dart';
 
 /// Represents a payment request with all necessary details.
-class PaymentRequest {
+final class PaymentRequest {
   /// The amount to be paid.
   final double amount;
 

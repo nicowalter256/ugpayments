@@ -10,7 +10,7 @@ import 'payment_exception.dart';
 ///
 /// Delegates the actual PesaPal order submission and status lookups to
 /// [PesaPalProvider] so there is a single implementation of that logic.
-class PaymentClient {
+final class PaymentClient {
   final PesaPalProvider _provider;
 
   /// Creates a new PaymentClient with the given configuration.
@@ -35,23 +35,25 @@ class PaymentClient {
   /// Validates a payment request.
   void _validateRequest(PaymentRequest request) {
     if (request.amount <= 0) {
-      throw PaymentException('Amount must be greater than 0');
+      throw PaymentException.validation('Amount must be greater than 0');
     }
 
     if (request.currency.isEmpty) {
-      throw PaymentException('Currency is required');
+      throw PaymentException.validation('Currency is required');
     }
 
     if (!PaymentValidator.isValidCurrency(request.currency)) {
-      throw PaymentException('Unsupported currency: ${request.currency}');
+      throw PaymentException.validation(
+        'Unsupported currency: ${request.currency}',
+      );
     }
 
     if (request.paymentMethod.isEmpty) {
-      throw PaymentException('Payment method is required');
+      throw PaymentException.validation('Payment method is required');
     }
 
     if (!PaymentValidator.isValidPaymentMethod(request.paymentMethod)) {
-      throw PaymentException(
+      throw PaymentException.validation(
         'Unsupported payment method: ${request.paymentMethod}',
       );
     }

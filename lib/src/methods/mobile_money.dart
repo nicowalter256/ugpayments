@@ -6,7 +6,7 @@ import '../models/payment_response.dart';
 /// SECURITY: This method previously simulated mobile money payment processing.
 /// It is now disabled to prevent unsafe usage.
 @Deprecated('MobileMoney is disabled. Use PesaPal redirect flow via WebView.')
-class MobileMoney {
+final class MobileMoney {
   /// Supported mobile money providers in Uganda (informational only).
   static const List<String> supportedProviders = [
     'MTN_MOBILE_MONEY',

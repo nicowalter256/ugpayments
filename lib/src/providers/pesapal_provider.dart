@@ -10,7 +10,7 @@ import '../utils/encryption.dart';
 import '../core/http_client_factory.dart';
 
 /// PesaPal payment provider implementation.
-class PesaPalProvider {
+final class PesaPalProvider {
   final PaymentConfig _config;
   final HttpClient _httpClient;
   final TokenManager _tokenManager;
@@ -48,14 +48,16 @@ class PesaPalProvider {
         final data = json.decode(responseBody) as Map<String, dynamic>;
         return _parseOrderResponse(data, request);
       } else {
-        throw PaymentException(
+        throw PaymentException.api(
           'PesaPal API error: ${response.statusCode} - '
           '${Encryption.sanitizeForLogging(responseBody)}',
         );
       }
     } catch (e) {
-      throw PaymentException(
+      if (e is PaymentException) rethrow;
+      throw PaymentException.api(
         'Failed to submit order to PesaPal: ${Encryption.sanitizeForLogging(e.toString())}',
+        originalException: e is Exception ? e : null,
       );
     }
   }
@@ -81,12 +83,16 @@ class PesaPalProvider {
         final data = json.decode(responseBody) as Map<String, dynamic>;
         return _parseStatusResponse(data);
       } else {
-        throw PaymentException(
+        throw PaymentException.api(
           'Failed to get transaction status: ${response.statusCode}',
         );
       }
     } catch (e) {
-      throw PaymentException('Failed to get transaction status: $e');
+      if (e is PaymentException) rethrow;
+      throw PaymentException.api(
+        'Failed to get transaction status: ${Encryption.sanitizeForLogging(e.toString())}',
+        originalException: e is Exception ? e : null,
+      );
     }
   }
 
@@ -132,11 +138,11 @@ class PesaPalProvider {
     final status = data['status'] as String?;
 
     if (error != null) {
-      throw PaymentException('PesaPal error: $error');
+      throw PaymentException.api('PesaPal error: $error');
     }
 
     if (status != '200') {
-      throw PaymentException('PesaPal API returned status: $status');
+      throw PaymentException.api('PesaPal API returned status: $status');
     }
 
     return PaymentResponse(
@@ -228,7 +234,7 @@ class PesaPalProvider {
 
     final ipnUrl = _config.ipnUrl;
     if (ipnUrl == null || ipnUrl.trim().isEmpty) {
-      throw PaymentException(
+      throw PaymentException.validation(
         'Missing IPN URL. Provide callbackUrl (used as IPN url by default) or set ipnUrl in PaymentConfig.',
       );
     }
@@ -262,7 +268,7 @@ class PesaPalProvider {
       final responseBody = await response.transform(utf8.decoder).join();
 
       if (response.statusCode != 200) {
-        throw PaymentException(
+        throw PaymentException.api(
           'Failed to register IPN: ${response.statusCode} - '
           '${Encryption.sanitizeForLogging(responseBody)}',
         );
@@ -271,15 +277,17 @@ class PesaPalProvider {
       final data = json.decode(responseBody) as Map<String, dynamic>;
       final ipnId = data['ipn_id'] as String?;
       if (ipnId == null || ipnId.trim().isEmpty) {
-        throw PaymentException(
+        throw PaymentException.api(
           'IPN registration succeeded but ipn_id was missing. Response: $data',
         );
       }
 
       return ipnId;
     } catch (e) {
-      throw PaymentException(
+      if (e is PaymentException) rethrow;
+      throw PaymentException.api(
         'Failed to register IPN: ${Encryption.sanitizeForLogging(e.toString())}',
+        originalException: e is Exception ? e : null,
       );
     }
   }

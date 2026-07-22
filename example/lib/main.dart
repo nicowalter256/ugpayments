@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:ugpayments/ugpayments.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'config.dart';
 
@@ -150,9 +149,8 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => PaymentWebViewScreen(
+              builder: (context) => PesaPalRedirectWebViewPage(
                 url: redirectUrl!,
-                transactionId: response.transactionId,
               ),
             ),
           );
@@ -476,62 +474,3 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
   }
 }
 
-class PaymentWebViewScreen extends StatefulWidget {
-  final String url;
-  final String transactionId;
-
-  PaymentWebViewScreen({required this.url, required this.transactionId});
-
-  @override
-  _PaymentWebViewScreenState createState() => _PaymentWebViewScreenState();
-}
-
-class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
-  late WebViewController controller;
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageStarted: (String url) {
-            setState(() {
-              isLoading = true;
-            });
-          },
-          onPageFinished: (String url) {
-            setState(() {
-              isLoading = false;
-            });
-          },
-        ),
-      )
-      ..loadRequest(Uri.parse(widget.url));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Payment'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: () {
-              controller.reload();
-            },
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          WebViewWidget(controller: controller),
-          if (isLoading) Center(child: CircularProgressIndicator()),
-        ],
-      ),
-    );
-  }
-}

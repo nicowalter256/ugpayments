@@ -1,7 +1,7 @@
 import 'payment_status.dart';
 
 /// Represents a payment transaction with full details.
-class Transaction {
+final class Transaction {
   /// The unique transaction ID.
   final String id;
 

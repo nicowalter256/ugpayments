@@ -6,7 +6,7 @@ import '../models/payment_response.dart';
 /// SECURITY: Previously simulated bank transfer processing and validated
 /// account details locally. It is now disabled to prevent unsafe usage.
 @Deprecated('BankTransfer is disabled. Initiate payments via PesaPal redirect flow.')
-class BankTransfer {
+final class BankTransfer {
   /// Supported banks (informational only).
   static const List<String> supportedBanks = [
     'STANBIC_BANK',

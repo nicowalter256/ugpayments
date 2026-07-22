@@ -1,5 +1,5 @@
 /// Constants used throughout the payment package.
-class PaymentConstants {
+final class PaymentConstants {
   // Private constructor to prevent instantiation
   PaymentConstants._();
 

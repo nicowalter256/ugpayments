@@ -6,7 +6,7 @@ import 'package:crypto/crypto.dart' as crypto;
 import 'package:encrypt/encrypt.dart';
 
 /// Utility class for handling payment data encryption and security.
-class Encryption {
+final class Encryption {
   static const int _aes256KeyLengthBytes = 32;
   static const int _gcmNonceLengthBytes = 12; // Recommended for GCM.
 

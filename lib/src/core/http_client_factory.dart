@@ -11,7 +11,7 @@ import 'payment_exception.dart';
 /// - If PesaPal TLS pinning is configured (PEM certificates), only those
 ///   certificates are trusted by the created [HttpClient].
 /// - In production, pinning is required for PesaPal to fail closed.
-class HttpClientFactory {
+final class HttpClientFactory {
   static const String _pinnedCertsPemKey = 'pesapal_pinned_certs_pem';
 
   static HttpClient createForConfig(PaymentConfig config) {
@@ -22,7 +22,7 @@ class HttpClientFactory {
 
     if (pinsPem == null || pinsPem.isEmpty) {
       if (needsPinning) {
-        throw PaymentException(
+        throw PaymentException.api(
           'TLS pinning is required for PesaPal in production. ' +
               'Provide `additionalConfig["$_pinnedCertsPemKey"]` as a non-empty '
               'list of PEM certificate strings.',
@@ -40,7 +40,7 @@ class HttpClientFactory {
         .toList(growable: false);
 
     if (derCerts.isEmpty) {
-      throw PaymentException(
+      throw PaymentException.api(
         'TLS pinning configuration contained no usable certificates.',
         code: 'TLS_PINNING_INVALID',
       );

@@ -2,7 +2,7 @@ import '../utils/encryption.dart';
 import 'payment_status.dart';
 
 /// Represents a response from a payment operation.
-class PaymentResponse {
+final class PaymentResponse {
   /// The unique transaction ID.
   final String transactionId;
 

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 /// Simple redirect page that loads the given URL inside a WebView.
-class PesaPalRedirectWebViewPage extends StatefulWidget {
+final class PesaPalRedirectWebViewPage extends StatefulWidget {
   final String url;
 
   const PesaPalRedirectWebViewPage({

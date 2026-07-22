@@ -9,7 +9,7 @@ import 'http_client_factory.dart';
 import '../utils/encryption.dart';
 
 /// Manages authentication tokens for PesaPal API.
-class TokenManager {
+final class TokenManager {
   final PaymentConfig _config;
   final HttpClient _httpClient;
   final FlutterSecureStorage _secureStorage;
@@ -90,15 +90,15 @@ class TokenManager {
         final status = data['status'] as String?;
 
         if (error != null) {
-          throw PaymentException('Token request failed: $error');
+          throw PaymentException.api('Token request failed: $error');
         }
 
         if (status != '200') {
-          throw PaymentException('Token request returned status: $status');
+          throw PaymentException.api('Token request returned status: $status');
         }
 
         if (token == null) {
-          throw PaymentException('No token received from PesaPal');
+          throw PaymentException.api('No token received from PesaPal');
         }
 
         // Cache the token and set expiry
@@ -128,15 +128,17 @@ class TokenManager {
 
         return token;
       } else {
-        throw PaymentException(
+        throw PaymentException.api(
           'Failed to fetch token: ${response.statusCode} - '
           '${Encryption.sanitizeForLogging(responseBody)}',
         );
       }
     } catch (e) {
-      throw PaymentException(
+      if (e is PaymentException) rethrow;
+      throw PaymentException.api(
         'Failed to fetch authentication token: '
         '${Encryption.sanitizeForLogging(e.toString())}',
+        originalException: e is Exception ? e : null,
       );
     }
   }

@@ -6,7 +6,7 @@ import 'dart:core';
 /// - CVV is intentionally not stored in this model.
 /// - `toJson()` and `toString()` do not include the full card number.
 /// - Only non-sensitive fields (e.g., `last4`) are kept.
-class CardDetails {
+final class CardDetails {
   /// Detected card network (e.g., VISA, MASTERCARD, AMEX).
   final String cardType;
 

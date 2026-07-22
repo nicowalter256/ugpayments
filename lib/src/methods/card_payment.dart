@@ -6,7 +6,7 @@ import '../models/payment_response.dart';
 /// SECURITY: This method previously simulated card payment processing and
 /// validated card data locally. It is now disabled to prevent unsafe usage.
 @Deprecated('CardPayment is disabled. Use PesaPal redirect flow via WebView.')
-class CardPayment {
+final class CardPayment {
   /// Supported card types (informational only).
   static const List<String> supportedCardTypes = ['VISA', 'MASTERCARD', 'AMEX'];
 

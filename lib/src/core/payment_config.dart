@@ -1,5 +1,5 @@
 /// Configuration settings for the payment client.
-class PaymentConfig {
+final class PaymentConfig {
   /// The consumer key for PesaPal authentication.
   final String consumerKey;
 
