@@ -1,3 +1,12 @@
+## 0.2.1
+
+- Docs: fix the install snippet in README.md, which still referenced the
+  original `^0.0.1` version constraint
+- Docs: replace the "Error Handling" example's `code`-string switch (which
+  matched codes the library didn't actually throw, e.g. `INVALID_DATA`,
+  `AUTH_FAILED`) with an exhaustive `switch` over the concrete
+  `PaymentException` subtypes introduced in 0.2.0
+
 ## 0.2.0
 
 - BREAKING: `PaymentException` is now a `sealed` class hierarchy instead of a

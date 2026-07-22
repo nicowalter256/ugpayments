@@ -19,7 +19,7 @@ Add the package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  ugpayments: ^0.0.1
+  ugpayments: ^0.2.0
 ```
 
 ## Before you start (PesaPal keys)
@@ -165,27 +165,42 @@ Mobile money options are also selected inside the same Pesapal checkout page.
 
 ## Error Handling
 
-The package provides comprehensive error handling with specific exception types:
+`PaymentException` is a sealed class, so catching it as a base type still works,
+but you can also `switch` over the concrete subtype for exhaustive, typed
+handling instead of matching on a `code` string:
 
 ```dart
 try {
   final response = await client.processPayment(request);
 } on PaymentException catch (e) {
-  switch (e.code) {
-    case 'INVALID_DATA':
+  switch (e) {
+    case PaymentValidationException():
+      // Thrown by PaymentClient before a request is even sent (bad amount,
+      // currency, or payment method). `e.code` is 'VALIDATION_ERROR'.
       print('Invalid payment data: ${e.message}');
-      break;
-    case 'AUTH_FAILED':
-      print('Authentication failed');
-      break;
-    case 'INSUFFICIENT_FUNDS':
-      print('Insufficient funds');
-      break;
-    default:
-      print('Payment error: ${e.message}');
+    case PaymentAuthenticationException():
+      print('Authentication failed. Check your API credentials.');
+    case PaymentInsufficientFundsException():
+      print('Insufficient funds.');
+    case PaymentTimeoutException():
+      print('Request timed out. Please try again.');
+    case PaymentNetworkException(:final reason):
+      print('Network error: $reason');
+    case PaymentInvalidDataException(:final field):
+      print('Invalid field: $field');
+    case PaymentApiException():
+      // Thrown for PesaPal API/transport failures (bad status codes,
+      // malformed responses, IPN registration failures, etc.).
+      // `e.code` is 'API_ERROR' unless a more specific code was set
+      // (e.g. 'TLS_PINNING_REQUIRED').
+      print('Payment error: ${e.message} (code: ${e.code})');
   }
 }
 ```
+
+If you'd rather match on the string `code` directly (for logging, analytics,
+etc.), every subtype still exposes `message`, `code`, `details`, and
+`originalException` from the base `PaymentException`.
 
 ## PesaPal Integration Details
 
