@@ -1,3 +1,10 @@
+## 0.2.2
+
+- Chore: fix all `flutter analyze` lint findings (adjacent string
+  concatenation in `HttpClientFactory`; missing widget `key` constructors,
+  a private type in a public API, and `avoid_print` in the example app).
+  No functional or API changes.
+
 ## 0.2.1
 
 - Docs: fix the install snippet in README.md, which still referenced the

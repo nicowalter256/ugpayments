@@ -8,6 +8,8 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.fromSeed(seedColor: Colors.indigo);
@@ -23,8 +25,10 @@ class MyApp extends StatelessWidget {
 }
 
 class PaymentHomeScreen extends StatefulWidget {
+  const PaymentHomeScreen({super.key});
+
   @override
-  _PaymentHomeScreenState createState() => _PaymentHomeScreenState();
+  State<PaymentHomeScreen> createState() => _PaymentHomeScreenState();
 }
 
 class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
@@ -58,8 +62,8 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
   void _initializePaymentClient() {
     // Check if credentials are configured
     if (!PesaPalConfig.isConfigured) {
-      print(PesaPalConfig.configurationStatus);
-      print(PesaPalConfig.securityWarning);
+      debugPrint(PesaPalConfig.configurationStatus);
+      debugPrint(PesaPalConfig.securityWarning);
     }
 
     // Initialize with configuration from config.dart

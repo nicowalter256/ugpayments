@@ -23,7 +23,7 @@ final class HttpClientFactory {
     if (pinsPem == null || pinsPem.isEmpty) {
       if (needsPinning) {
         throw PaymentException.api(
-          'TLS pinning is required for PesaPal in production. ' +
+          'TLS pinning is required for PesaPal in production. '
               'Provide `additionalConfig["$_pinnedCertsPemKey"]` as a non-empty '
               'list of PEM certificate strings.',
           code: 'TLS_PINNING_REQUIRED',
