@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -11,6 +12,10 @@ import 'payment_exception.dart';
 /// - If PesaPal TLS pinning is configured (PEM certificates), only those
 ///   certificates are trusted by the created [HttpClient].
 /// - In production, pinning is required for PesaPal to fail closed.
+///
+/// Every client gets `connectionTimeout` set from
+/// [PaymentConfig.timeoutSeconds]; use [send] to also bound the full
+/// request/response round trip.
 final class HttpClientFactory {
   static const String _pinnedCertsPemKey = 'pesapal_pinned_certs_pem';
 
@@ -24,12 +29,12 @@ final class HttpClientFactory {
       if (needsPinning) {
         throw PaymentException.api(
           'TLS pinning is required for PesaPal in production. '
-              'Provide `additionalConfig["$_pinnedCertsPemKey"]` as a non-empty '
-              'list of PEM certificate strings.',
+          'Provide `additionalConfig["$_pinnedCertsPemKey"]` as a non-empty '
+          'list of PEM certificate strings.',
           code: 'TLS_PINNING_REQUIRED',
         );
       }
-      return HttpClient();
+      return HttpClient()..connectionTimeout = config.timeout;
     }
 
     final securityContext = SecurityContext(withTrustedRoots: false);
@@ -51,7 +56,40 @@ final class HttpClientFactory {
       securityContext.setTrustedCertificatesBytes(der);
     }
 
-    return HttpClient(context: securityContext);
+    return HttpClient(context: securityContext)
+      ..connectionTimeout = config.timeout;
+  }
+
+  /// Sends a request and reads the full response body as UTF-8.
+  ///
+  /// The whole round trip (connect, send, receive) is bounded by [timeout];
+  /// exceeding it aborts the request and throws [PaymentTimeoutException].
+  static Future<({int statusCode, String body})> send(
+    HttpClient client, {
+    required String method,
+    required Uri uri,
+    required Duration timeout,
+    Map<String, String> headers = const {},
+    Object? jsonBody,
+  }) async {
+    HttpClientRequest? request;
+    Future<({int statusCode, String body})> roundTrip() async {
+      request = await client.openUrl(method, uri);
+      headers.forEach(request!.headers.set);
+      if (jsonBody != null) {
+        request!.write(json.encode(jsonBody));
+      }
+      final response = await request!.close();
+      final body = await response.transform(utf8.decoder).join();
+      return (statusCode: response.statusCode, body: body);
+    }
+
+    try {
+      return await roundTrip().timeout(timeout);
+    } on TimeoutException {
+      request?.abort();
+      throw PaymentException.timeout();
+    }
   }
 
   static Uint8List _pemToDerBytes(String pem) {
@@ -60,9 +98,7 @@ final class HttpClientFactory {
     // If it's PEM, extract base64 between header/footer.
     if (normalized.contains('-----BEGIN')) {
       final lines = normalized.split('\n');
-      final base64Str = lines
-          .where((line) => !line.startsWith('-----'))
-          .join();
+      final base64Str = lines.where((line) => !line.startsWith('-----')).join();
       return Uint8List.fromList(base64.decode(base64Str));
     }
 
@@ -70,4 +106,3 @@ final class HttpClientFactory {
     return Uint8List.fromList(base64.decode(normalized));
   }
 }
-

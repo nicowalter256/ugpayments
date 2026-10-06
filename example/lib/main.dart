@@ -15,10 +15,7 @@ class MyApp extends StatelessWidget {
     final colorScheme = ColorScheme.fromSeed(seedColor: Colors.indigo);
     return MaterialApp(
       title: 'UgPayments Example',
-      theme: ThemeData(
-        colorScheme: colorScheme,
-        useMaterial3: true,
-      ),
+      theme: ThemeData(colorScheme: colorScheme, useMaterial3: true),
       home: PaymentHomeScreen(),
     );
   }
@@ -73,6 +70,8 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
             consumerSecret: PesaPalConfig.consumerSecret,
             callbackUrl: PesaPalConfig.callbackUrl,
             enableDebugLogging: PesaPalConfig.enableDebugLogging,
+            pinnedCertificatesPem:
+                PesaPalConfig.productionPinnedCertificatesPem,
           )
         : PaymentConfig.pesaPalSandbox(
             consumerKey: PesaPalConfig.consumerKey,
@@ -149,15 +148,20 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
       if (response.isPending && redirectUrl != null) {
         // Automatically open the redirect URL in a WebView so the user
         // can complete payment without extra taps.
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.push(
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          final result = await Navigator.push<PesaPalRedirectResult>(
             context,
             MaterialPageRoute(
               builder: (context) => PesaPalRedirectWebViewPage(
                 url: redirectUrl!,
+                callbackUrl: PesaPalConfig.callbackUrl,
               ),
             ),
           );
+          // The customer finished checkout; confirm the real status.
+          if (result != null && mounted) {
+            await checkTransactionStatus();
+          }
         });
       } else if (response.isSuccessful) {
         _showSuccessDialog(response);
@@ -274,9 +278,7 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('UgPayments • PesaPal'),
-      ),
+      appBar: AppBar(title: const Text('UgPayments • PesaPal')),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16),
         child: Column(
@@ -477,4 +479,3 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
     super.dispose();
   }
 }
-

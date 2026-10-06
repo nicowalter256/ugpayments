@@ -27,8 +27,8 @@ final class TokenManager {
 
   /// Creates a new TokenManager.
   TokenManager(this._config)
-      : _httpClient = HttpClientFactory.createForConfig(_config),
-        _secureStorage = const FlutterSecureStorage();
+    : _httpClient = HttpClientFactory.createForConfig(_config),
+      _secureStorage = const FlutterSecureStorage();
 
   /// Gets a valid authentication token, fetching a new one if necessary.
   Future<String> getToken() async {
@@ -43,9 +43,7 @@ final class TokenManager {
 
     // Try to restore from secure storage.
     final storedToken = await _secureStorage.read(key: _tokenStorageKey);
-    final storedExpiry = await _secureStorage.read(
-      key: _tokenExpiryStorageKey,
-    );
+    final storedExpiry = await _secureStorage.read(key: _tokenExpiryStorageKey);
 
     if (storedToken != null && storedExpiry != null) {
       final expiry = DateTime.tryParse(storedExpiry);
@@ -74,12 +72,15 @@ final class TokenManager {
         'consumer_secret': consumerSecret,
       };
 
-      final httpRequest = await _httpClient.postUrl(url);
-      httpRequest.headers.set('Content-Type', 'application/json');
-      httpRequest.write(json.encode(requestBody));
-
-      final response = await httpRequest.close();
-      final responseBody = await response.transform(utf8.decoder).join();
+      final response = await HttpClientFactory.send(
+        _httpClient,
+        method: 'POST',
+        uri: url,
+        timeout: _config.timeout,
+        headers: const {'Content-Type': 'application/json'},
+        jsonBody: requestBody,
+      );
+      final responseBody = response.body;
 
       if (response.statusCode == 200) {
         final data = json.decode(responseBody) as Map<String, dynamic>;
@@ -115,10 +116,7 @@ final class TokenManager {
         }
 
         // Persist token for reuse across app restarts.
-        await _secureStorage.write(
-          key: _tokenStorageKey,
-          value: _cachedToken,
-        );
+        await _secureStorage.write(key: _tokenStorageKey, value: _cachedToken);
         if (_tokenExpiry != null) {
           await _secureStorage.write(
             key: _tokenExpiryStorageKey,
@@ -152,8 +150,9 @@ final class TokenManager {
   }
 
   Future<String> _resolveConsumerKey() async {
-    final storageKey =
-        _config.additionalConfig?['pesapal_consumerKey_storageKey']?.toString();
+    final storageKey = _config
+        .additionalConfig?['pesapal_consumerKey_storageKey']
+        ?.toString();
 
     if (storageKey != null && storageKey.trim().isNotEmpty) {
       final v = await _secureStorage.read(key: storageKey);
@@ -167,7 +166,9 @@ final class TokenManager {
   }
 
   Future<String> _resolveConsumerSecret() async {
-    final storageKey = _config.additionalConfig?['pesapal_consumerSecret_storageKey']?.toString();
+    final storageKey = _config
+        .additionalConfig?['pesapal_consumerSecret_storageKey']
+        ?.toString();
 
     if (storageKey != null && storageKey.trim().isNotEmpty) {
       final v = await _secureStorage.read(key: storageKey);

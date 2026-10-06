@@ -43,8 +43,8 @@ final class PaymentConfig {
     String? notificationId,
     String? ipnUrl,
     String ipnNotificationType = 'GET',
+    List<String>? pinnedCertificatesPem,
   }) {
-    final effectiveIpnUrl = ipnUrl ?? callbackUrl;
     return PaymentConfig(
       consumerKey: consumerKey,
       consumerSecret: consumerSecret,
@@ -52,13 +52,13 @@ final class PaymentConfig {
       environment: 'sandbox',
       timeoutSeconds: timeoutSeconds,
       enableDebugLogging: enableDebugLogging,
-      additionalConfig: {
-        if (callbackUrl != null) 'callback_url': callbackUrl,
-        if (notificationId != null) 'notification_id': notificationId,
-        if (effectiveIpnUrl != null) 'ipn_url': effectiveIpnUrl,
-        'ipn_notification_type': ipnNotificationType,
-        'provider': 'pesapal',
-      },
+      additionalConfig: _pesaPalAdditionalConfig(
+        callbackUrl: callbackUrl,
+        notificationId: notificationId,
+        ipnUrl: ipnUrl,
+        ipnNotificationType: ipnNotificationType,
+        pinnedCertificatesPem: pinnedCertificatesPem,
+      ),
     );
   }
 
@@ -76,9 +76,9 @@ final class PaymentConfig {
     String? notificationId,
     String? ipnUrl,
     String ipnNotificationType = 'GET',
+    List<String>? pinnedCertificatesPem,
     bool enableDebugLogging = true,
   }) {
-    final effectiveIpnUrl = ipnUrl ?? callbackUrl;
     return PaymentConfig(
       consumerKey: '',
       consumerSecret: '',
@@ -86,20 +86,25 @@ final class PaymentConfig {
       environment: 'sandbox',
       timeoutSeconds: timeoutSeconds,
       enableDebugLogging: enableDebugLogging,
-      additionalConfig: {
-        if (callbackUrl != null) 'callback_url': callbackUrl,
-        if (notificationId != null) 'notification_id': notificationId,
-        if (effectiveIpnUrl != null) 'ipn_url': effectiveIpnUrl,
-        'ipn_notification_type': ipnNotificationType,
-        'provider': 'pesapal',
-        // TokenManager lookup keys.
-        'pesapal_consumerKey_storageKey': consumerKeyStorageKey,
-        'pesapal_consumerSecret_storageKey': consumerSecretStorageKey,
-      },
+      additionalConfig: _pesaPalAdditionalConfig(
+        callbackUrl: callbackUrl,
+        notificationId: notificationId,
+        ipnUrl: ipnUrl,
+        ipnNotificationType: ipnNotificationType,
+        pinnedCertificatesPem: pinnedCertificatesPem,
+        consumerKeyStorageKey: consumerKeyStorageKey,
+        consumerSecretStorageKey: consumerSecretStorageKey,
+      ),
     );
   }
 
   /// Creates a PaymentConfig for PesaPal production environment.
+  ///
+  /// [pinnedCertificatesPem] is required in practice: production clients
+  /// fail closed with `TLS_PINNING_REQUIRED` without it. Pass the PEM of the
+  /// certificate authority that issues PesaPal's certificate (not PesaPal's
+  /// own leaf certificate), since the pins are used as the only trusted
+  /// roots. Update them before that CA rotates.
   factory PaymentConfig.pesaPalProduction({
     required String consumerKey,
     required String consumerSecret,
@@ -110,8 +115,8 @@ final class PaymentConfig {
     String? notificationId,
     String? ipnUrl,
     String ipnNotificationType = 'GET',
+    List<String>? pinnedCertificatesPem,
   }) {
-    final effectiveIpnUrl = ipnUrl ?? callbackUrl;
     return PaymentConfig(
       consumerKey: consumerKey,
       consumerSecret: consumerSecret,
@@ -119,18 +124,20 @@ final class PaymentConfig {
       environment: 'production',
       timeoutSeconds: timeoutSeconds,
       enableDebugLogging: enableDebugLogging,
-      additionalConfig: {
-        if (callbackUrl != null) 'callback_url': callbackUrl,
-        if (notificationId != null) 'notification_id': notificationId,
-        if (effectiveIpnUrl != null) 'ipn_url': effectiveIpnUrl,
-        'ipn_notification_type': ipnNotificationType,
-        'provider': 'pesapal',
-      },
+      additionalConfig: _pesaPalAdditionalConfig(
+        callbackUrl: callbackUrl,
+        notificationId: notificationId,
+        ipnUrl: ipnUrl,
+        ipnNotificationType: ipnNotificationType,
+        pinnedCertificatesPem: pinnedCertificatesPem,
+      ),
     );
   }
 
   /// Creates a PaymentConfig for PesaPal production where credentials are
   /// loaded from secure storage by [TokenManager].
+  ///
+  /// See [PaymentConfig.pesaPalProduction] for [pinnedCertificatesPem].
   ///
   /// Security: this avoids passing `consumerKey/consumerSecret` values through
   /// Dart objects. Provide only the secure storage *keys*.
@@ -143,9 +150,9 @@ final class PaymentConfig {
     String? notificationId,
     String? ipnUrl,
     String ipnNotificationType = 'GET',
+    List<String>? pinnedCertificatesPem,
     bool enableDebugLogging = false,
   }) {
-    final effectiveIpnUrl = ipnUrl ?? callbackUrl;
     return PaymentConfig(
       consumerKey: '',
       consumerSecret: '',
@@ -153,17 +160,46 @@ final class PaymentConfig {
       environment: 'production',
       timeoutSeconds: timeoutSeconds,
       enableDebugLogging: enableDebugLogging,
-      additionalConfig: {
-        if (callbackUrl != null) 'callback_url': callbackUrl,
-        if (notificationId != null) 'notification_id': notificationId,
-        if (effectiveIpnUrl != null) 'ipn_url': effectiveIpnUrl,
-        'ipn_notification_type': ipnNotificationType,
-        'provider': 'pesapal',
-        // TokenManager lookup keys.
-        'pesapal_consumerKey_storageKey': consumerKeyStorageKey,
-        'pesapal_consumerSecret_storageKey': consumerSecretStorageKey,
-      },
+      additionalConfig: _pesaPalAdditionalConfig(
+        callbackUrl: callbackUrl,
+        notificationId: notificationId,
+        ipnUrl: ipnUrl,
+        ipnNotificationType: ipnNotificationType,
+        pinnedCertificatesPem: pinnedCertificatesPem,
+        consumerKeyStorageKey: consumerKeyStorageKey,
+        consumerSecretStorageKey: consumerSecretStorageKey,
+      ),
     );
+  }
+
+  /// Builds the PesaPal-specific [additionalConfig] shared by the PesaPal
+  /// factories.
+  static Map<String, dynamic> _pesaPalAdditionalConfig({
+    required String? callbackUrl,
+    required String? notificationId,
+    required String? ipnUrl,
+    required String ipnNotificationType,
+    required List<String>? pinnedCertificatesPem,
+    String? consumerKeyStorageKey,
+    String? consumerSecretStorageKey,
+  }) {
+    final effectiveIpnUrl = ipnUrl ?? callbackUrl;
+    return {
+      if (callbackUrl != null) 'callback_url': callbackUrl,
+      if (notificationId != null) 'notification_id': notificationId,
+      if (effectiveIpnUrl != null) 'ipn_url': effectiveIpnUrl,
+      'ipn_notification_type': ipnNotificationType,
+      'provider': 'pesapal',
+      if (pinnedCertificatesPem != null)
+        'pesapal_pinned_certs_pem': List<String>.unmodifiable(
+          pinnedCertificatesPem,
+        ),
+      // TokenManager lookup keys.
+      if (consumerKeyStorageKey != null)
+        'pesapal_consumerKey_storageKey': consumerKeyStorageKey,
+      if (consumerSecretStorageKey != null)
+        'pesapal_consumerSecret_storageKey': consumerSecretStorageKey,
+    };
   }
 
   /// Creates a PaymentConfig for sandbox/testing environment.
@@ -229,6 +265,9 @@ final class PaymentConfig {
     };
   }
 
+  /// Timeout applied to each request sent to the payment API.
+  Duration get timeout => Duration(seconds: timeoutSeconds);
+
   /// Returns true if this is a sandbox configuration.
   bool get isSandbox => environment == 'sandbox';
 
@@ -279,7 +318,7 @@ final class PaymentConfig {
   /// PesaPal transaction status endpoint.
   Uri pesaPalGetTransactionStatusUri(String orderTrackingId) {
     return Uri.parse(
-      '$baseUrl/api/Transactions/GetTransactionStatus?orderTrackingId=$orderTrackingId',
-    );
+      '$baseUrl/api/Transactions/GetTransactionStatus',
+    ).replace(queryParameters: {'orderTrackingId': orderTrackingId});
   }
 }

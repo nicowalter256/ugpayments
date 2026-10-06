@@ -230,25 +230,71 @@ final config = PaymentConfig.pesaPalProduction(
   consumerKey: 'your_production_consumer_key',
   consumerSecret: 'your_production_consumer_secret',
   callbackUrl: 'https://your-app.com/callback',
+  // Required in production, see "TLS pinning" below.
+  pinnedCertificatesPem: [pesapalIssuerCaPem],
 );
 ```
+
+Every request is bounded by `timeoutSeconds` (default 30). A request that
+exceeds it is aborted and throws `PaymentTimeoutException`.
+
+### TLS pinning (required in production)
+
+Production clients only trust the certificates you pin, and refuse to start
+(`PaymentApiException` with code `TLS_PINNING_REQUIRED`) if none are given.
+Pass the PEM of the **certificate authority that issues PesaPal's
+certificate**, not PesaPal's own (leaf) certificate, because the pins are used
+as the only trusted roots. You can see the issuing CA with:
+
+```bash
+openssl s_client -connect pay.pesapal.com:443 -showcerts </dev/null
+```
+
+Plan to update the pin before that CA rotates; otherwise payments will fail
+with a TLS error. Pinning is optional in sandbox.
 
 ### Response Handling
 
 ```dart
 final response = await client.processPayment(request);
 
-// Check if payment is pending (requires redirect)
 if (response.isPending) {
-  final redirectUrl = response.data?['redirect_url'];
-  // Open redirectUrl in your WebView.
-  // The Pesapal checkout page will handle the customer flow (including card options),
-  // so you do not initiate a separate "card payment" request.
-}
+  // Open PesaPal's checkout page. It handles the customer flow (including
+  // cards and mobile money), so you don't make a separate card request.
+  final result = await Navigator.push<PesaPalRedirectResult>(
+    context,
+    MaterialPageRoute(
+      builder: (_) => PesaPalRedirectWebViewPage(
+        url: response.data!['redirect_url'],
+        // The same callbackUrl as in PaymentConfig.
+        callbackUrl: 'https://your-app.com/callback',
+      ),
+    ),
+  );
 
-// Check transaction status later
-final statusResponse = await client.getTransaction(response.transactionId);
+  if (result != null) {
+    // The customer finished checkout. Confirm the real outcome.
+    final transaction = await client.getTransaction(result.orderTrackingId);
+    if (transaction?.status == PaymentStatus.successful) {
+      // Payment confirmed.
+    }
+  }
+}
 ```
+
+`PesaPalRedirectWebViewPage` only allows navigation on `https://*.pesapal.com`.
+When PesaPal redirects to your `callbackUrl`, the page stops that navigation
+and pops with a `PesaPalRedirectResult` holding the `orderTrackingId`. Pass
+`onComplete` instead if you want to handle the result without popping. The
+result `null` means the customer backed out.
+
+PesaPal statuses map to `PaymentStatus` as follows: `Completed` → `successful`,
+`Failed` → `failed`, `Reversed` → `refunded`, and `Invalid` (not yet paid) →
+`pending`.
+
+Always confirm with `getTransaction` (or your server's IPN handler) before
+treating a payment as successful. Reaching the callback URL alone doesn't
+prove payment.
 
 ## Testing
 

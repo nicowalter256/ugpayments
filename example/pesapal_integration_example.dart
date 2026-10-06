@@ -72,6 +72,8 @@ void pesapalProviderExample() async {
     consumerKey: 'your_production_consumer_key',
     consumerSecret: 'your_production_consumer_secret',
     callbackUrl: 'https://your-app.com/callback',
+    // Required in production: PEM of the CA that issues PesaPal's certificate.
+    pinnedCertificatesPem: ['-----BEGIN CERTIFICATE-----\n...'],
   );
 
   final pesapalProvider = PesaPalProvider(config);

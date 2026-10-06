@@ -30,19 +30,18 @@ final class PesaPalProvider {
       // when it isn't provided by the consumer of the package.
       final notificationId = await _resolveNotificationId(token);
 
-      final url = Uri.parse(
-        '${_config.baseUrl}/api/Transactions/SubmitOrderRequest',
+      final response = await HttpClientFactory.send(
+        _httpClient,
+        method: 'POST',
+        uri: _config.pesaPalSubmitOrderRequestUri,
+        timeout: _config.timeout,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        jsonBody: _buildOrderRequestBody(request, notificationId),
       );
-
-      final requestBody = _buildOrderRequestBody(request, notificationId);
-
-      final httpRequest = await _httpClient.postUrl(url);
-      httpRequest.headers.set('Authorization', 'Bearer $token');
-      httpRequest.headers.set('Content-Type', 'application/json');
-      httpRequest.write(json.encode(requestBody));
-
-      final response = await httpRequest.close();
-      final responseBody = await response.transform(utf8.decoder).join();
+      final responseBody = response.body;
 
       if (response.statusCode == 200) {
         final data = json.decode(responseBody) as Map<String, dynamic>;
@@ -68,20 +67,20 @@ final class PesaPalProvider {
       // Get authentication token
       final token = await _tokenManager.getToken();
 
-      final url = Uri.parse(
-        '${_config.baseUrl}/api/Transactions/GetTransactionStatus?orderTrackingId=$orderTrackingId',
+      final response = await HttpClientFactory.send(
+        _httpClient,
+        method: 'GET',
+        uri: _config.pesaPalGetTransactionStatusUri(orderTrackingId),
+        timeout: _config.timeout,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
       );
 
-      final request = await _httpClient.getUrl(url);
-      request.headers.set('Authorization', 'Bearer $token');
-      request.headers.set('Content-Type', 'application/json');
-
-      final response = await request.close();
-      final responseBody = await response.transform(utf8.decoder).join();
-
       if (response.statusCode == 200) {
-        final data = json.decode(responseBody) as Map<String, dynamic>;
-        return _parseStatusResponse(data);
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return _parseStatusResponse(data, orderTrackingId);
       } else {
         throw PaymentException.api(
           'Failed to get transaction status: ${response.statusCode}',
@@ -162,41 +161,57 @@ final class PesaPalProvider {
   }
 
   /// Parses the transaction status response from PesaPal.
-  PaymentResponse _parseStatusResponse(Map<String, dynamic> data) {
-    final orderTrackingId = data['order_tracking_id'] as String?;
-    final merchantReference = data['merchant_reference'] as String?;
-    final paymentStatus = data['payment_status'] as String?;
-    final paymentMethod = data['payment_method'] as String?;
-    final amount = data['amount'] as double?;
-    final currency = data['currency'] as String?;
-
-    PaymentStatus status;
-    String message;
-
-    switch (paymentStatus?.toLowerCase()) {
-      case 'completed':
-        status = PaymentStatus.successful;
-        message = 'Payment completed successfully';
-        break;
-      case 'pending':
-        status = PaymentStatus.pending;
-        message = 'Payment is pending';
-        break;
-      case 'failed':
-        status = PaymentStatus.failed;
-        message = 'Payment failed';
-        break;
-      case 'cancelled':
-        status = PaymentStatus.cancelled;
-        message = 'Payment was cancelled';
-        break;
-      default:
-        status = PaymentStatus.pending;
-        message = 'Payment status: $paymentStatus';
+  ///
+  /// PesaPal v3 reports the outcome as `payment_status_description`
+  /// (`Completed`, `Failed`, `Reversed`, `Invalid`) alongside a numeric
+  /// `status_code` (1, 2, 3, 0). The response does not echo the tracking ID,
+  /// so the one that was looked up is passed in.
+  PaymentResponse _parseStatusResponse(
+    Map<String, dynamic> data,
+    String orderTrackingId,
+  ) {
+    final apiError = data['error'];
+    if (apiError is Map &&
+        (apiError['code'] != null || apiError['message'] != null)) {
+      throw PaymentException.api(
+        'PesaPal status error: ${apiError['message'] ?? apiError['code']}',
+        code: apiError['code']?.toString(),
+      );
     }
 
+    final merchantReference = data['merchant_reference']?.toString();
+    final paymentMethod = data['payment_method']?.toString();
+    final description =
+        (data['payment_status_description'] ?? data['payment_status'])
+            ?.toString();
+    final statusCode = data['status_code'] is num
+        ? (data['status_code'] as num).toInt()
+        : int.tryParse('${data['status_code']}');
+    final amount = data['amount'] is num
+        ? (data['amount'] as num).toDouble()
+        : double.tryParse('${data['amount']}');
+    final currency = data['currency']?.toString();
+
+    final (status, message) = switch ((
+      description?.toLowerCase(),
+      statusCode,
+    )) {
+      ('completed', _) ||
+      (null, 1) => (PaymentStatus.successful, 'Payment completed successfully'),
+      ('failed', _) || (null, 2) => (PaymentStatus.failed, 'Payment failed'),
+      ('reversed', _) ||
+      (null, 3) => (PaymentStatus.refunded, 'Payment was reversed'),
+      ('cancelled', _) => (PaymentStatus.cancelled, 'Payment was cancelled'),
+      // `Invalid` is what PesaPal reports for an order the customer hasn't
+      // paid yet, so treat it as still pending rather than failed.
+      _ => (
+        PaymentStatus.pending,
+        'Payment status: ${description ?? 'unknown'}',
+      ),
+    };
+
     return PaymentResponse(
-      transactionId: orderTrackingId ?? _generateTransactionId(),
+      transactionId: orderTrackingId,
       status: status,
       message: message,
       amount: amount,
@@ -205,7 +220,9 @@ final class PesaPalProvider {
       data: {
         'merchant_reference': merchantReference,
         'payment_method': paymentMethod,
-        'pesapal_status': paymentStatus,
+        'pesapal_status': description,
+        'pesapal_status_code': statusCode,
+        'confirmation_code': data['confirmation_code']?.toString(),
         'provider': 'pesapal',
       },
     );
@@ -252,20 +269,19 @@ final class PesaPalProvider {
     required String ipnNotificationType,
   }) async {
     try {
-      final httpRequest = await _httpClient.postUrl(_config.pesaPalRegisterIpnUri);
-      httpRequest.headers.set('Authorization', 'Bearer $token');
-      httpRequest.headers.set('Accept', 'application/json');
-      httpRequest.headers.set('Content-Type', 'application/json');
-
-      httpRequest.write(
-        json.encode({
-          'url': ipnUrl,
-          'ipn_notification_type': ipnNotificationType,
-        }),
+      final response = await HttpClientFactory.send(
+        _httpClient,
+        method: 'POST',
+        uri: _config.pesaPalRegisterIpnUri,
+        timeout: _config.timeout,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        jsonBody: {'url': ipnUrl, 'ipn_notification_type': ipnNotificationType},
       );
-
-      final response = await httpRequest.close();
-      final responseBody = await response.transform(utf8.decoder).join();
+      final responseBody = response.body;
 
       if (response.statusCode != 200) {
         throw PaymentException.api(

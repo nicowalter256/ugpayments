@@ -40,6 +40,12 @@ class PesaPalConfig {
   static const String productionCallbackUrl =
       'https://your-app.com/production-callback';
 
+  /// PEM certificate(s) of the CA that issues PesaPal's TLS certificate.
+  /// Production clients refuse to connect without at least one pin.
+  static const List<String> productionPinnedCertificatesPem = [
+    // '-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----',
+  ];
+
   // ============================================================================
   // ENVIRONMENT SETTINGS
   // ============================================================================

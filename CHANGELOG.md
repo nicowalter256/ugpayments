@@ -1,3 +1,29 @@
+## 0.2.3
+
+- Fixes:
+  - `getTransactionStatus`/`getTransaction` now read PesaPal v3's
+    `payment_status_description`/`status_code`; previously they read a
+    `payment_status` field PesaPal doesn't send, so every lookup reported
+    `pending`. `Reversed` now maps to `PaymentStatus.refunded` and `Invalid`
+    to `pending`
+  - Status lookups no longer fail when PesaPal returns a whole-number
+    `amount` (e.g. `1000` for UGX)
+  - Status responses now use the looked-up tracking ID as `transactionId`
+    instead of a random one, and surface PesaPal's `error` object as a
+    `PaymentApiException`
+  - The `orderTrackingId` query parameter is now URL-encoded
+  - `PaymentConfig.timeoutSeconds` is now enforced on every request; a request
+    that exceeds it is aborted and throws `PaymentTimeoutException`
+- Features:
+  - `pinnedCertificatesPem` parameter on all PesaPal `PaymentConfig`
+    factories. Production configs previously had no way to pass pins and
+    always failed with `TLS_PINNING_REQUIRED`
+  - `PesaPalRedirectWebViewPage` takes `callbackUrl` and an optional
+    `onComplete`. The redirect to the callback URL is intercepted instead of
+    being blocked, and the page returns a `PesaPalRedirectResult` with the
+    `orderTrackingId`
+- Tests: HTTP-level tests against a local fake PesaPal server
+
 ## 0.2.2
 
 - Chore: fix all `flutter analyze` lint findings (adjacent string
